@@ -1,4 +1,5 @@
-"""HTML for anthem.adjiebrotots.com: home, one page per anthem (melody), one per instrument, one full score.
+"""HTML for anthem.adjiebrotots.com: home; per anthem the full orchestra score (/<country>/), the melody
+(/<country>/melody/) and one page per instrument, each with the score drawn in the browser and the orchestra player.
 
 Static pages in the Adjie family design (tokens, theme cookie and dropdowns copied from tool.adjiebrotots.com) with
 the Anthem Madness brand. Every page carries its anthem's native title and native instrument words for search.
@@ -23,7 +24,7 @@ TODAY = dt.date.today()
 PERSON = 'https://www.adjiebrotots.com/#person'
 
 SLOT_TOP = '4716600974'        # Display 1: banner under the title
-SLOT_BETWEEN = '4447514374'    # Display 2: between score pages
+SLOT_BETWEEN = '4447514374'    # Display 2: under the score
 SLOT_MULTI1 = '9720022354'     # Multiplex 1
 SLOT_MULTI2 = '4659267360'     # Multiplex 2
 SLOT_ARTICLE = '1433722275'    # In-article
@@ -65,7 +66,7 @@ def registry(built, anthems, orch, slugs_all):
                                english=m.get('english'), region=m['region'], native=m['native'][:1],
                                insts=[g.inst.slug for g in b.insts], key_meter=b.arr.desc.get('key_meter', ''),
                                length=b.arr.desc.get('length', ''), parts=len(b.arr.parts),
-                               image=b.melody.pages[0] if b.melody and b.melody.pages else '',
+                               image=b.image,
                                updated=TODAY.isoformat())
     MANIFEST.write_text(json.dumps(man, indent=1, ensure_ascii=False, sort_keys=True))
     return man
@@ -151,11 +152,13 @@ def header() -> str:
 def footer() -> str:
     return f'''<footer class="container page-footer"><section class="page-footer-info card">
   <p class="footer-links"><a href="/">All anthems</a> · <a href="https://tool.adjiebrotots.com/privacy/">Privacy Policy</a> · <a href="https://tool.adjiebrotots.com/disclaimer/">Disclaimer</a> · <a href="https://www.adjiebrotots.com/">adjiebrotots.com</a> · <span class="footer-updated">Updated <time datetime="{TODAY.isoformat()}">{TODAY.day} {TODAY:%B %Y}</time></span></p>
-  <p>The melodies are the official tunes of public national anthems; the orchestral arrangements, sheet music and MIDI files are by Anthem Madness and free to download for practice, school and community performances. Every PDF carries the anthem.adjiebrotots.com watermark.</p>
+  <p>The melodies are the official tunes of public national anthems; the orchestral arrangements, sheet music and MIDI files are by Anthem Madness and free to download for practice, school and community performances. Every PDF carries the anthem.adjiebrotots.com watermark, faint and behind the notes.</p>
+  <p class="footer-credits">The player plays the MIDI in your browser with <a href="https://github.com/spessasus/spessasynth_lib">spessasynth</a> (<a href="/assets/js/vendor/spessasynth-LICENSE.txt">Apache 2.0</a>) and the SoundFont of the <a href="https://orchestra.adjiebrotots.com/">orchestra app</a>: <a href="http://vis.versilstudios.net/vsco-community.html">VSCO 2 Community Edition</a> and VCSL by Versilian Studios (Sam Gossner) and Ivy Audio (Simon Dalzell), over <a href="https://www.schristiancollins.com">GeneralUser GS</a> by S. Christian Collins (<a href="/assets/sf/GeneralUser-GS-LICENSE.txt">licence</a>). Scores drawn by <a href="https://www.verovio.org/">Verovio</a>.</p>
   <div class="footer-made"><img src="/assets/img/indonesian.png" alt="" width="36" height="36"/><span>Made in Australia by <a href="https://www.adjiebrotots.com/" rel="author">Adjie Brotosukmono</a>, an Indonesian engineer.</span></div>
 </section></footer>
 <script src="/assets/js/dropdown.js"></script>
 <script src="/assets/js/site.js"></script>
+<script src="/assets/js/score.js"></script>
 </body>
 </html>
 '''
@@ -243,51 +246,80 @@ def doc_ld(name: str, url: str, fmt: str, size: int = 0) -> dict:
 
 
 def options(c: Ctx, current: str) -> str:
-    opts = [('melody', f'Melody (lead sheet)', c.base)]
+    opts = [('full-score', 'Full orchestra (all parts)', c.base), ('melody', 'Melody (lead sheet)', f'{c.base}melody/')]
     for g in c.b.insts:
         opts.append((g.inst.slug, g.inst.name if len(g.parts) == 1 else g.inst.plural, f'{c.base}{g.inst.slug}/'))
-    opts.append(('full-score', 'Full score (all parts)', f'{c.base}full-score/'))
     return ''.join(f'<option value="{u}"{" selected" if k == current else ""}>{e(n)}</option>' for k, n, u in opts)
 
 
-def score_viewer(c: Ctx, parts, current: str, inst_label: str) -> str:
+ICO_PLAY = ('<svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" '
+            'd="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>')
+ICO_PAUSE = ('<svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" '
+             'd="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>')
+
+
+def player(c: Ctx, what: str, part: bool = False) -> str:
+    """The orchestra MIDI played by a SoundFont synth in the browser, synced to the score (score.js)."""
+    b = c.b
+    data = b.player
+    js = json.dumps(data, separators=(',', ':')).replace('</', '<\\/')
+    mix = ('<select class="pl-mix" aria-label="What the orchestra plays"><option value="all" selected>Full orchestra</option>'
+           '<option value="solo">This part alone</option><option value="minus">Without this part</option></select>') if part else ''
+    speeds = ''.join(f'<option value="{v}"{" selected" if v == "1" else ""}>{v}×</option>'
+                     for v in ('0.5', '0.75', '1', '1.25'))
+    return f'''<div class="player" id="player">
+  <button type="button" class="pl-play" aria-label="Play">{ICO_PLAY}{ICO_PAUSE}</button>
+  <div class="pl-main"><span class="pl-title">Full orchestra · {e(what)} highlighted</span>
+    <div class="pl-line"><span class="pl-time"><span class="pl-cur">0:00</span> / <span class="pl-dur">0:00</span></span>
+    <input type="range" class="pl-seek" min="0" max="1000" value="0" step="1" aria-label="Position in the music"/></div></div>
+  <div class="pl-tools">
+    {mix}<select class="pl-speed" aria-label="Speed">{speeds}</select>
+    <button type="button" class="pl-follow" aria-pressed="true" title="Scroll with the music">Follow</button>
+    <button type="button" class="pl-zoom" data-zoom="-" aria-label="Smaller notes">−</button>
+    <button type="button" class="pl-zoom" data-zoom="+" aria-label="Larger notes">+</button>
+  </div>
+</div>
+<script type="application/json" id="amPlayer">{js}</script>'''
+
+
+def score_viewer(c: Ctx, parts, current: str, what: str) -> str:
     tabs = ''
     if len(parts) > 1:
         tabs = '<div class="part-tabs" role="tablist" aria-label="Parts">' + ''.join(
-            f'<button type="button" role="tab" class="part-tab{" active" if i == 0 else ""}" aria-selected="{"true" if i == 0 else "false"}" '
-            f'data-part="{p.key}">{e(p.label)}</button>' for i, p in enumerate(parts)) + '</div>'
-    blocks = []
-    for i, p in enumerate(parts):
-        figs = []
-        for k, src in enumerate(p.pages, 1):
-            alt = f'{c.title} {p.label} sheet music, page {k} of {len(p.pages)}'
-            nat = native_phrase(c.arr.slug, current if current != 'melody' else 'melody', c.ntitle)
-            if nat:
-                alt += f' ({nat})'
-            load = 'eager' if (i == 0 and k == 1) else 'lazy'
-            prio = ' fetchpriority="high"' if (i == 0 and k == 1) else ''
-            figs.append(f'<figure class="sheet"><img src="{src}" width="1240" height="1754" alt="{e(alt)}" '
-                        f'loading="{load}" decoding="async"{prio}/><figcaption>Page {k} of {len(p.pages)}</figcaption></figure>')
-            if i == 0 and k < len(p.pages):
-                figs.append(ad(SLOT_BETWEEN, cls='ad-between'))
-        hidden = '' if i == 0 else ' hidden'
-        tr = f'<p class="part-note">Written for {e(p.transpose_name.replace("in ", "instrument in "))} (transposed part).</p>' if p.transpose_name else ''
-        blocks.append(f'<div class="score-part" id="part-{p.key}" data-part="{p.key}"{hidden}>{tr}{"".join(figs)}</div>')
-    return f'''<section class="card score-card" aria-label="Sheet music">
+            f'<button type="button" role="tab" class="part-tab{" active" if i == 0 else ""}" '
+            f'aria-selected="{"true" if i == 0 else "false"}" data-part="{p.key}" data-src="{p.src}"'
+            f'{"" if p.channel is None else f" data-channel=\"{p.channel}\""}>{e(p.label)}</button>'
+            for i, p in enumerate(parts)) + '</div>'
+    notes = ''.join(
+        f'<p class="part-note" data-part="{p.key}"{"" if i == 0 else " hidden"}>Written for '
+        f'{e(p.transpose_name.replace("in ", "instrument in "))} (transposed part); the orchestra sounds in concert pitch.</p>'
+        for i, p in enumerate(parts) if p.transpose_name)
+    p0 = parts[0]
+    nat = native_phrase(c.arr.slug, current, c.ntitle)
+    label = f'{c.title} {what} sheet music' + (f' ({nat})' if nat else '')
+    return f'''<section class="card score-card" aria-label="Sheet music and player">
   <div class="score-head">
     <label class="field"><span class="field-label">Instrument</span>
       <select class="sel-input" id="instSel" aria-label="Choose an instrument">{options(c, current)}</select></label>
     {tabs}
   </div>
-  {''.join(blocks)}
-</section>'''
+  {player(c, what, part=p0.channel is not None)}
+  {notes}
+  <div class="score-view" id="scoreView" data-src="{p0.src}" data-full="{1 if p0.full else 0}"{"" if p0.channel is None else f' data-channel="{p0.channel}"'} role="img" aria-label="{e(label)}" aria-busy="true">
+    <div class="score-status"><div class="spinner"></div><span>Loading the score…</span></div>
+    <noscript><p class="score-status">The sheet music is drawn in your browser and needs JavaScript. The MIDI files work without it.</p></noscript>
+  </div>
+</section>
+{ad(SLOT_BETWEEN, cls='ad-between')}'''
 
 
 def pdf_button(p, cls: str = 'btn-primary', label: str = 'PDF') -> str:
-    """The PDF is made in the reader's browser from the page images (site.js), with the big watermark and a footer."""
-    n = len(p.pages)
-    return (f'<button type="button" class="btn {cls}" data-pdf="{e(p.pdf)}" data-pages="{" ".join(p.pages)}" '
-            f'data-footer="{e(p.footer)}">{label} <small>{n} page{"s" if n > 1 else ""}</small></button>')
+    """The PDF is drawn in the reader's browser at A4 from the score file (score.js), watermark and footer added."""
+    n = p.pages
+    return (f'<button type="button" class="btn {cls}" data-pdf="{e(p.pdf)}" data-src="{p.src}" '
+            f'data-full="{1 if p.full else 0}" data-print="{e(json.dumps(p.print, separators=(",", ":")))}" '
+            f'data-footer="{e(p.footer)}">{label} '
+            f'<small>{n} page{"s" if n != 1 else ""}</small></button>')
 
 
 def download_card(c: Ctx, parts, extra: list) -> str:
@@ -295,19 +327,34 @@ def download_card(c: Ctx, parts, extra: list) -> str:
     rows = []
     for i, p in enumerate(parts):
         mid = f'<a class="btn btn-ghost" href="{p.mid}" download>MIDI</a>' if p.mid else ''
-        rows.append(f'''<li class="dl-row{" active" if i == 0 else ""}" data-part="{p.key}">
-  <span class="dl-name">{e(p.label)}{f' <small>{e(p.transpose_name)}</small>' if p.transpose_name else ''}</span>
-  <span class="dl-btns">{pdf_button(p)}{mid}</span></li>''')
+        tr = f' <small>{e(p.transpose_name)}</small>' if p.transpose_name else ''
+        rows.append(f'<li class="dl-row{" active" if i == 0 and len(parts) > 1 else ""}" data-part="{p.key}">'
+                    f'<span class="dl-name">{e(p.label)}{tr}</span><span class="dl-btns">{pdf_button(p)}{mid}</span></li>')
     more = []
     for n, u, t in extra:
+        if not u:
+            continue
         btn = pdf_button(u, 'btn-ghost') if t == 'PDF' else f'<a class="btn btn-ghost" href="{u}" download>{e(t)}</a>'
         more.append(f'<li class="dl-row"><span class="dl-name">{e(n)}</span><span class="dl-btns">{btn}</span></li>')
+    sub = f'<h3 class="dl-sub">Whole arrangement</h3><ul class="dl-list">{"".join(more)}</ul>' if more else ''
     return f'''<section class="card dl-card" aria-labelledby="dlTitle">
   <h2 id="dlTitle">Download</h2>
   <ul class="dl-list">{''.join(rows)}</ul>
-  {f'<h3 class="dl-sub">Whole arrangement</h3><ul class="dl-list">{"".join(more)}</ul>' if more else ''}
-  <p class="dl-note">Free for practice, school and community performance. The PDF is made in your browser from the pages above and carries the anthem.adjiebrotots.com watermark.</p>
+  {sub}
+  <p class="dl-note">Free for practice, school and community performance. The PDF is drawn in your browser at A4, with the anthem.adjiebrotots.com watermark faint behind the notes.</p>
 </section>'''
+
+
+def whole_extra(c: Ctx, full_pdf: bool = True, melody: bool = True) -> list:
+    b = c.b
+    extra = [('Full orchestra', b.orchestra_mid, 'MIDI')]
+    if b.chorus_mid:
+        extra.append(('Chorus only', b.chorus_mid, 'MIDI'))
+    if melody and b.melody_mid:
+        extra.append(('Melody only', b.melody_mid, 'MIDI'))
+    if full_pdf:
+        extra.append(('Full score', b.full, 'PDF'))
+    return extra
 
 
 def facts_card(c: Ctx) -> str:
@@ -332,11 +379,11 @@ def facts_card(c: Ctx) -> str:
 
 def inst_grid(c: Ctx, current: str) -> str:
     cards = []
-    items = [('melody', 'Melody', c.base, 'lead sheet with lyrics' if c.arr.lyrics else 'lead sheet')]
+    items = [('full-score', 'Full orchestra', c.base, f'{len(c.arr.parts)} parts, full score'),
+             ('melody', 'Melody', f'{c.base}melody/', 'lead sheet with lyrics' if c.arr.lyrics else 'lead sheet')]
     for g in c.b.insts:
         n = len(g.parts)
         items.append((g.inst.slug, g.inst.name, f'{c.base}{g.inst.slug}/', f'{n} part{"s" if n > 1 else ""}'))
-    items.append(('full-score', 'Full score', f'{c.base}full-score/', f'{len(c.arr.parts)} parts'))
     for slug, name, url, sub in items:
         if slug == current:
             continue
@@ -398,6 +445,9 @@ def common_faq(c: Ctx, what: str) -> list[tuple[str, str]]:
     qa = [(f'Is the {what} of {c.title} free to download?',
            f'Yes. The PDF and the MIDI files on this page are free for practice, school and community performances. '
            f'Each PDF carries the anthem.adjiebrotots.com watermark.'),
+          ('Can I listen to it while I read?',
+           'Yes. Press play above the score: the full orchestra plays in your browser and the notes light up as they sound, '
+           'with the page scrolling along. Click any note to play from there, or slow it down to practise.'),
           (f'Who wrote {c.title}?',
            f'The music is by {e(m["music"])}' + (f' and the words by {e(m["words"])}' if m.get('words') and 'instrumental' not in m['language'].lower() else '')
            + f'. It was adopted {e(m["adopted"])}.'),
@@ -409,6 +459,14 @@ def common_faq(c: Ctx, what: str) -> list[tuple[str, str]]:
     return qa
 
 
+def page_ld(c: Ctx, url: str, title: str, desc: str, items, faq, extra: list) -> dict:
+    return {'@context': 'https://schema.org', '@graph': [
+        {'@type': 'WebPage', '@id': SITE + url, 'url': SITE + url, 'name': title, 'description': desc,
+         'inLanguage': 'en', 'isPartOf': {'@id': SITE + '/#website'}, 'about': {'@id': f'{SITE}{c.base}#anthem'},
+         'primaryImageOfPage': SITE + c.b.image, 'dateModified': TODAY.isoformat(), 'author': {'@id': PERSON}},
+        composition_ld(c), *extra, crumbs_ld(items), faq_ld(faq)]}
+
+
 def inst_page(c: Ctx, g) -> str:
     inst = g.inst
     parts = g.parts
@@ -418,8 +476,8 @@ def inst_page(c: Ctx, g) -> str:
     url = f'{c.base}{inst.slug}/'
     title = f'{c.title} {name} Sheet Music (PDF) & MIDI | {c.Kind} of {c.ct}'
     desc = (f'Free {name.lower()} sheet music and MIDI of {c.title}, {c.kind} of {c.country}, from a full '
-            f'orchestral arrangement: {", ".join(p.label for p in parts)}. Download the PDF or MIDI.'
-            + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
+            f'orchestral arrangement: {", ".join(p.label for p in parts)}. Read it along with the orchestra, then '
+            f'download the PDF or MIDI.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: {e(name)} Sheet Music'
     lead_bits = [f'{c.Kind} of {e(c.ct)}']
     if c.native and c.native[0] != c.title:
@@ -428,41 +486,32 @@ def inst_page(c: Ctx, g) -> str:
         lead_bits.append(e(nat))
     lead = ' · '.join(lead_bits)
     items = [('Anthems', '/'), (c.ct, c.base), (name, url)]
-    extra = [('Full orchestra', c.b.orchestra_mid, 'MIDI')]
-    if c.b.chorus_mid:
-        extra.append(('Chorus only', c.b.chorus_mid, 'MIDI'))
-    extra.append(('Full score', c.b.full, 'PDF'))
     faq = [(f'Which {name.lower()} parts are in this arrangement?',
             f'{len(parts)} part{"s" if many else ""}: ' + ', '.join(e(p.label) for p in parts)
             + (f'. Parts are written for the {e(inst.name.lower())} {e(inst.transpose_name)}, so they read a transposition above the sounding pitch; the full score is in concert pitch.' if inst.transpose_name else '.'))]
     faq += common_faq(c, f'{name.lower()} sheet music')
     lead_sentence = (f'<p class="geo">{e(c.title)} is {c.kind} of {e(c.country)}. This page has the '
-                     f'{e(name.lower())} part{"s" if many else ""} of a full orchestral arrangement as sheet music to read and print, '
-                     f'with a PDF and a MIDI file for each part.</p>')
-    ld = {'@context': 'https://schema.org', '@graph': [
-        {'@type': 'WebPage', '@id': SITE + url, 'url': SITE + url, 'name': title, 'description': desc,
-         'inLanguage': 'en', 'isPartOf': {'@id': SITE + '/#website'}, 'about': {'@id': f'{SITE}{c.base}#anthem'},
-         'primaryImageOfPage': SITE + parts[0].pages[0], 'dateModified': TODAY.isoformat(),
-         'author': {'@id': PERSON}},
-        composition_ld(c),
-        *[doc_ld(f'{c.title} {p.label} (MIDI)', p.mid, 'audio/midi') for p in parts if p.mid],
-        crumbs_ld(items), faq_ld(faq)]}
-    viewer = score_viewer(c, parts, inst.slug, name)
+                     f'{e(name.lower())} part{"s" if many else ""} of a full orchestral arrangement as sheet music to '
+                     f'read along with the orchestra, with a PDF and a MIDI file for each part.</p>')
+    ld = page_ld(c, url, title, desc, items, faq,
+                 [doc_ld(f'{c.title} {p.label} (MIDI)', p.mid, 'audio/midi') for p in parts if p.mid])
+    viewer = score_viewer(c, parts, inst.slug, name.lower() + (' parts' if many else ' part'))
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,
-                  side_dl=download_card(c, parts, extra), current=inst.slug, faq=faq)
+                  side_dl=download_card(c, parts, whole_extra(c)), current=inst.slug, faq=faq)
     kw = ', '.join(x for x in [f'{c.title} {name.lower()} sheet music', f'{c.title} {name.lower()} pdf',
                               f'{c.title} {name.lower()} midi', f'national anthem of {c.ct} {name.lower()}', nat] if x)
-    return head(title=title, desc=desc, url=url, image=parts[0].pages[0], jsonld=ld, keywords=kw) + header() + body + footer()
+    return head(title=title, desc=desc, url=url, image=c.b.image, jsonld=ld, keywords=kw) + header() + body + footer()
 
 
 def country_page(c: Ctx) -> str:
-    mel = c.b.melody
+    """/<country>/: the full orchestra score with the player."""
+    fs = c.b.full
     nat = native_phrase(c.arr.slug, None, c.ntitle)
     url = c.base
-    title = f'{c.title} Sheet Music & MIDI: {c.Kind} of {c.ct} (Orchestra)'
-    desc = (f'{c.title}, {c.kind} of {c.country}: free melody sheet music'
-            + (' with lyrics' if c.arr.lyrics else '') +
-            f', a full orchestral MIDI and the sheet music of every instrument ({len(c.arr.parts)} parts) as PDF.'
+    title = f'{c.title} Sheet Music & MIDI: {c.Kind} of {c.ct} (Full Orchestra)'
+    desc = (f'{c.title}, {c.kind} of {c.country}, for full orchestra: read the score as the orchestra plays it, '
+            f'then download the sheet music of every instrument ({len(c.arr.parts)} parts), the melody'
+            + (' with lyrics' if c.arr.lyrics else '') + ' and the MIDI, free.'
             + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: {c.Kind} of {e(c.ct)}'
     bits = []
@@ -470,63 +519,65 @@ def country_page(c: Ctx) -> str:
         bits.append(e(c.m['english']))
     if c.native and c.native[0] != c.title:
         bits.append(f'<span lang="und">{e(c.native[0])}</span>')
-    bits.append('Melody, orchestra MIDI and sheet music for every instrument')
+    bits.append(f'Full orchestra score, {len(c.arr.parts)} parts')
     lead = ' · '.join(bits)
+    play = ': press play and the notes light up as the orchestra plays them'
     lead_sentence = (f'<p class="geo">{e(c.title)} is {c.kind} of {e(c.country)}, with music by '
-                     f'{e(c.m["music"])}. Below is its melody as sheet music'
-                     + (' with the words' if c.arr.lyrics else '') +
-                     f', a MIDI file of a full {len(c.arr.parts)}-part orchestral arrangement, and the sheet music for each instrument of that orchestra.</p>')
+                     f'{e(c.m["music"])}. Below is the full score of a {len(c.arr.parts)}-part orchestral arrangement in '
+                     f'concert pitch{play}. The melody' + (' with the words' if c.arr.lyrics else '')
+                     + ' and every instrument have pages of their own.</p>')
     items = [('Anthems', '/'), (c.ct, url)]
-    extra = [('Full orchestra', c.b.orchestra_mid, 'MIDI')]
-    if c.b.chorus_mid:
-        extra.append(('Chorus only', c.b.chorus_mid, 'MIDI'))
-    extra.append(('Full score', c.b.full, 'PDF'))
     faq = [(f'Can I download {c.title} as MIDI?',
-            f'Yes: the melody alone, the full orchestral arrangement ({len(c.arr.parts)} parts, one track per part) and a short chorus version.'),
+            f'Yes: the full orchestral arrangement ({len(c.arr.parts)} parts, one track per part), the melody alone, a '
+            f'short chorus version and a MIDI for every part.'),
            ('Is there sheet music for my instrument?',
-            'Pick your instrument in the menu above the score: ' + ', '.join(g.inst.name.lower() for g in c.b.insts) + ', plus the full score.')]
+            'Pick your instrument in the menu above the score: the melody, '
+            + ', '.join(g.inst.name.lower() for g in c.b.insts) + '. This page has the full score with every part in concert pitch.')]
     faq += common_faq(c, 'sheet music')
-    ld = {'@context': 'https://schema.org', '@graph': [
-        {'@type': 'WebPage', '@id': SITE + url, 'url': SITE + url, 'name': title, 'description': desc,
-         'inLanguage': 'en', 'isPartOf': {'@id': SITE + '/#website'}, 'about': {'@id': f'{SITE}{c.base}#anthem'},
-         'primaryImageOfPage': SITE + mel.pages[0], 'dateModified': TODAY.isoformat(), 'author': {'@id': PERSON}},
-        composition_ld(c),
-        doc_ld(f'{c.title} full orchestra (MIDI)', c.b.orchestra_mid, 'audio/midi'),
-        crumbs_ld(items), faq_ld(faq)]}
-    viewer = score_viewer(c, [mel], 'melody', 'Melody')
+    ld = page_ld(c, url, title, desc, items, faq,
+                 [doc_ld(f'{c.title} full orchestra (MIDI)', c.b.orchestra_mid, 'audio/midi')])
+    viewer = score_viewer(c, [fs], 'full-score', 'full score')
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,
-                  side_dl=download_card(c, [mel], extra), current='melody', faq=faq)
+                  side_dl=download_card(c, [fs], whole_extra(c, full_pdf=False)), current='full-score', faq=faq)
     kw = ', '.join([f'national anthem of {c.ct}', f'{c.title} sheet music', f'{c.title} midi', f'{c.title} orchestra',
-                    *c.native[:3]] + ([nat] if nat else []))
-    return head(title=title, desc=desc, url=url, image=mel.pages[0], jsonld=ld, keywords=kw) + header() + body + footer()
+                    f'{c.title} full score', *c.native[:3]] + ([nat] if nat else []))
+    return head(title=title, desc=desc, url=url, image=c.b.image, jsonld=ld, keywords=kw) + header() + body + footer()
 
 
-def full_page(c: Ctx) -> str:
-    fs = c.b.full
-    nat = native_phrase(c.arr.slug, 'full-score', c.ntitle)
-    url = f'{c.base}full-score/'
-    title = f'{c.title} Full Orchestra Score (PDF) | {c.Kind} of {c.ct}'
-    desc = (f'The full orchestral score of {c.title}, {c.kind} of {c.country}: all {len(c.arr.parts)} parts '
-            f'in concert pitch, free PDF and MIDI.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
-    h1 = f'{e(c.title)}: Full Orchestra Score'
-    lead = f'{c.Kind} of {e(c.ct)} · {len(c.arr.parts)} parts in concert pitch' + (f' · {e(nat)}' if nat else '')
-    lead_sentence = (f'<p class="geo">The conductor\'s score of an orchestral arrangement of {e(c.title)}, the national '
-                     f'anthem of {e(c.country)}: every part on one page, in concert pitch, with empty staves hidden.</p>')
-    items = [('Anthems', '/'), (c.ct, c.base), ('Full score', url)]
-    extra = [('Full orchestra', c.b.orchestra_mid, 'MIDI')]
-    if c.b.chorus_mid:
-        extra.append(('Chorus only', c.b.chorus_mid, 'MIDI'))
-    faq = common_faq(c, 'full score')
-    ld = {'@context': 'https://schema.org', '@graph': [
-        {'@type': 'WebPage', '@id': SITE + url, 'url': SITE + url, 'name': title, 'description': desc, 'inLanguage': 'en',
-         'isPartOf': {'@id': SITE + '/#website'}, 'primaryImageOfPage': SITE + fs.pages[0], 'dateModified': TODAY.isoformat(),
-         'author': {'@id': PERSON}},
-        composition_ld(c),
-        crumbs_ld(items), faq_ld(faq)]}
-    viewer = score_viewer(c, [fs], 'full-score', 'Full score')
+def melody_page(c: Ctx) -> str:
+    """/<country>/melody/: the tune as a lead sheet (with the words where they are sung)."""
+    mel = c.b.melody
+    nat = native_phrase(c.arr.slug, 'melody', c.ntitle)
+    url = f'{c.base}melody/'
+    words = ' with lyrics' if c.arr.lyrics else ''
+    title = f'{c.title} Melody Sheet Music{" & Lyrics" if c.arr.lyrics else ""} (PDF, MIDI) | {c.Kind} of {c.ct}'
+    desc = (f'The melody of {c.title}, {c.kind} of {c.country}, as a lead sheet{words}: read it as the orchestra '
+            f'plays, then download the PDF and the MIDI, free.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
+    h1 = f'{e(c.title)}: Melody{" and Lyrics" if c.arr.lyrics else ""}'
+    lead = f'{c.Kind} of {e(c.ct)} · lead sheet{words}' + (f' · {e(nat)}' if nat else '')
+    play = ' Press play to hear it with the full orchestra and follow the tune as it lights up.'
+    lead_sentence = (f'<p class="geo">The official melody of {e(c.title)}, note for note, on one staff'
+                     + (' with the words under the notes' if c.arr.lyrics else '') + f'.{play}</p>')
+    items = [('Anthems', '/'), (c.ct, c.base), ('Melody', url)]
+    faq = common_faq(c, 'melody sheet music')
+    ld = page_ld(c, url, title, desc, items, faq,
+                 [doc_ld(f'{c.title} melody (MIDI)', mel.mid, 'audio/midi')] if mel.mid else [])
+    viewer = score_viewer(c, [mel], 'melody', 'melody')
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,
-                  side_dl=download_card(c, [fs], extra), current='full-score', faq=faq)
-    return head(title=title, desc=desc, url=url, image=fs.pages[0], jsonld=ld) + header() + body + footer()
+                  side_dl=download_card(c, [mel], whole_extra(c, melody=False)), current='melody', faq=faq)
+    kw = ', '.join(x for x in [f'{c.title} melody', f'{c.title} lyrics sheet music' if c.arr.lyrics else '',
+                              f'{c.title} lead sheet', f'national anthem of {c.ct} melody', nat] if x)
+    return head(title=title, desc=desc, url=url, image=c.b.image, jsonld=ld, keywords=kw) + header() + body + footer()
+
+
+def moved_page(to: str, title: str) -> str:
+    """An old address that now lives elsewhere (the full score moved to the country page)."""
+    u = SITE + to
+    return f'''<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>{e(title)}</title>
+<meta name="robots" content="noindex, follow"/><link rel="canonical" href="{u}"/><meta http-equiv="refresh" content="0; url={to}"/>
+<script>location.replace({json.dumps(to)} + location.hash);</script></head>
+<body><p>This page has moved to <a href="{to}">{e(u)}</a>.</p></body></html>
+'''
 
 
 def write_all(built, man):
@@ -534,6 +585,9 @@ def write_all(built, man):
         c = Ctx(b, man)
         out = DOCS / b.country
         (out / 'index.html').write_text(country_page(c))
+        (out / 'melody').mkdir(exist_ok=True)
+        (out / 'melody' / 'index.html').write_text(melody_page(c))
         for g in b.insts:
             (out / g.inst.slug / 'index.html').write_text(inst_page(c, g))
-        (out / 'full-score' / 'index.html').write_text(full_page(c))
+        (out / 'full-score').mkdir(exist_ok=True)
+        (out / 'full-score' / 'index.html').write_text(moved_page(c.base, f'{c.title} full score | {BRAND}'))

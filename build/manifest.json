@@ -3,7 +3,7 @@
   "country": "Argentina",
   "country_slug": "argentina",
   "english": "Argentine National Anthem",
-  "image": "/argentina/img/melody-1.webp",
+  "image": "/argentina/img/himno-nacional-argentino-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -37,7 +37,7 @@
   "country": "ASEAN",
   "country_slug": "asean",
   "english": null,
-  "image": "/asean/img/melody-1.webp",
+  "image": "/asean/img/the-asean-way-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -69,7 +69,7 @@
   "country": "Australia",
   "country_slug": "australia",
   "english": null,
-  "image": "/australia/img/melody-1.webp",
+  "image": "/australia/img/advance-australia-fair-orchestra-score.png",
   "insts": [
    "flute",
    "clarinet",
@@ -101,7 +101,7 @@
   "country": "Bahrain",
   "country_slug": "bahrain",
   "english": "Our Bahrain",
-  "image": "/bahrain/img/melody-1.webp",
+  "image": "/bahrain/img/bahrainona-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -133,7 +133,7 @@
   "country": "Belgium",
   "country_slug": "belgium",
   "english": "The Song of Brabant",
-  "image": "/belgium/img/melody-1.webp",
+  "image": "/belgium/img/la-brabanconne-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -164,7 +164,7 @@
   "country": "Brazil",
   "country_slug": "brazil",
   "english": "Brazilian National Anthem",
-  "image": "/brazil/img/melody-1.webp",
+  "image": "/brazil/img/hino-nacional-brasileiro-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -196,7 +196,7 @@
   "country": "Brunei",
   "country_slug": "brunei",
   "english": "God Bless the Sultan",
-  "image": "/brunei/img/melody-1.webp",
+  "image": "/brunei/img/allah-peliharakan-sultan-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -228,7 +228,7 @@
   "country": "Cambodia",
   "country_slug": "cambodia",
   "english": "Majestic Kingdom",
-  "image": "/cambodia/img/melody-1.webp",
+  "image": "/cambodia/img/nokoreach-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -261,7 +261,7 @@
   "country": "Canada",
   "country_slug": "canada",
   "english": null,
-  "image": "/canada/img/melody-1.webp",
+  "image": "/canada/img/o-canada-orchestra-score.png",
   "insts": [
    "flute",
    "clarinet",
@@ -293,7 +293,7 @@
   "country": "China",
   "country_slug": "china",
   "english": null,
-  "image": "/china/img/melody-1.webp",
+  "image": "/china/img/march-of-the-volunteers-orchestra-score.png",
   "insts": [
    "horn",
    "trumpet",
@@ -321,7 +321,7 @@
   "country": "Colombia",
   "country_slug": "colombia",
   "english": "National Anthem of Colombia",
-  "image": "/colombia/img/melody-1.webp",
+  "image": "/colombia/img/himno-nacional-de-la-republica-de-colombia-orchestra-score.png",
   "insts": [
    "flute",
    "bassoon",
@@ -352,7 +352,7 @@
   "country": "Denmark",
   "country_slug": "denmark",
   "english": "There Is a Lovely Country",
-  "image": "/denmark/img/melody-1.webp",
+  "image": "/denmark/img/der-er-et-yndigt-land-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -382,7 +382,7 @@
   "country": "the European Union",
   "country_slug": "european-union",
   "english": null,
-  "image": "/european-union/img/melody-1.webp",
+  "image": "/european-union/img/anthem-of-europe-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -415,7 +415,7 @@
   "country": "Finland",
   "country_slug": "finland",
   "english": "Our Land",
-  "image": "/finland/img/melody-1.webp",
+  "image": "/finland/img/maamme-orchestra-score.png",
   "insts": [
    "flute",
    "clarinet",
@@ -445,7 +445,7 @@
   "country": "France",
   "country_slug": "france",
   "english": null,
-  "image": "/france/img/melody-1.webp",
+  "image": "/france/img/la-marseillaise-orchestra-score.png",
   "insts": [
    "piccolo",
    "horn",
@@ -474,7 +474,7 @@
   "country": "Germany",
   "country_slug": "germany",
   "english": "The Song of the Germans",
-  "image": "/germany/img/melody-1.webp",
+  "image": "/germany/img/das-lied-der-deutschen-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -506,7 +506,7 @@
   "country": "Greece",
   "country_slug": "greece",
   "english": "Hymn to Liberty",
-  "image": "/greece/img/melody-1.webp",
+  "image": "/greece/img/ymnos-eis-tin-eleftherian-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -540,7 +540,7 @@
   "country": "India",
   "country_slug": "india",
   "english": "Thou Art the Ruler of the Minds of All People",
-  "image": "/india/img/melody-1.webp",
+  "image": "/india/img/jana-gana-mana-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -573,7 +573,7 @@
   "country": "Iran",
   "country_slug": "iran",
   "english": "National Anthem of the Islamic Republic of Iran",
-  "image": "/iran/img/melody-1.webp",
+  "image": "/iran/img/sorud-e-melli-ye-jomhuri-ye-eslami-ye-iran-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -605,7 +605,7 @@
   "country": "Ireland",
   "country_slug": "ireland",
   "english": "The Soldier's Song",
-  "image": "/ireland/img/melody-1.webp",
+  "image": "/ireland/img/amhran-na-bhfiann-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -639,7 +639,7 @@
   "country": "Italy",
   "country_slug": "italy",
   "english": "The Song of the Italians",
-  "image": "/italy/img/melody-1.webp",
+  "image": "/italy/img/il-canto-degli-italiani-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -669,7 +669,7 @@
   "country": "Japan",
   "country_slug": "japan",
   "english": "His Imperial Majesty's Reign",
-  "image": "/japan/img/melody-1.webp",
+  "image": "/japan/img/kimigayo-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -703,7 +703,7 @@
   "country": "Laos",
   "country_slug": "laos",
   "english": "Hymn of the Lao People",
-  "image": "/laos/img/melody-1.webp",
+  "image": "/laos/img/pheng-xat-lao-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -737,7 +737,7 @@
   "country": "Malaysia",
   "country_slug": "malaysia",
   "english": "My Country",
-  "image": "/malaysia/img/melody-1.webp",
+  "image": "/malaysia/img/negaraku-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -769,7 +769,7 @@
   "country": "Mexico",
   "country_slug": "mexico",
   "english": "Mexican National Anthem",
-  "image": "/mexico/img/melody-1.webp",
+  "image": "/mexico/img/himno-nacional-mexicano-orchestra-score.png",
   "insts": [
    "flute",
    "clarinet",
@@ -799,7 +799,7 @@
   "country": "Mongolia",
   "country_slug": "mongolia",
   "english": "State Anthem of Mongolia",
-  "image": "/mongolia/img/melody-1.webp",
+  "image": "/mongolia/img/mongol-ulsyn-toriin-duulal-orchestra-score.png",
   "insts": [
    "horn",
    "trumpet",
@@ -827,7 +827,7 @@
   "country": "the Netherlands",
   "country_slug": "netherlands",
   "english": "The William",
-  "image": "/netherlands/img/melody-1.webp",
+  "image": "/netherlands/img/het-wilhelmus-orchestra-score.png",
   "insts": [
    "oboe",
    "bassoon",
@@ -857,7 +857,7 @@
   "country": "New Zealand",
   "country_slug": "new-zealand",
   "english": null,
-  "image": "/new-zealand/img/melody-1.webp",
+  "image": "/new-zealand/img/god-defend-new-zealand-aotearoa-orchestra-score.png",
   "insts": [
    "flute",
    "horn",
@@ -887,7 +887,7 @@
   "country": "North Korea",
   "country_slug": "north-korea",
   "english": "The Patriotic Song",
-  "image": "/north-korea/img/melody-1.webp",
+  "image": "/north-korea/img/aegukka-orchestra-score.png",
   "insts": [
    "flute",
    "horn",
@@ -917,7 +917,7 @@
   "country": "Norway",
   "country_slug": "norway",
   "english": "Yes, We Love This Country",
-  "image": "/norway/img/melody-1.webp",
+  "image": "/norway/img/ja-vi-elsker-dette-landet-orchestra-score.png",
   "insts": [
    "bassoon",
    "horn",
@@ -947,7 +947,7 @@
   "country": "Peru",
   "country_slug": "peru",
   "english": "National Anthem of Peru",
-  "image": "/peru/img/melody-1.webp",
+  "image": "/peru/img/himno-nacional-del-peru-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -978,7 +978,7 @@
   "country": "the Philippines",
   "country_slug": "philippines",
   "english": "Chosen Land",
-  "image": "/philippines/img/melody-1.webp",
+  "image": "/philippines/img/lupang-hinirang-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -1010,7 +1010,7 @@
   "country": "Poland",
   "country_slug": "poland",
   "english": "Dąbrowski's Mazurka (Poland Is Not Yet Lost)",
-  "image": "/poland/img/melody-1.webp",
+  "image": "/poland/img/mazurek-dabrowskiego-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -1041,7 +1041,7 @@
   "country": "Portugal",
   "country_slug": "portugal",
   "english": "The Portuguese Song",
-  "image": "/portugal/img/melody-1.webp",
+  "image": "/portugal/img/a-portuguesa-orchestra-score.png",
   "insts": [
    "flute",
    "horn",
@@ -1070,7 +1070,7 @@
   "country": "Qatar",
   "country_slug": "qatar",
   "english": "The Amiri Salute",
-  "image": "/qatar/img/melody-1.webp",
+  "image": "/qatar/img/as-salam-al-amiri-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1102,7 +1102,7 @@
   "country": "Romania",
   "country_slug": "romania",
   "english": "Awaken Thee, Romanian!",
-  "image": "/romania/img/melody-1.webp",
+  "image": "/romania/img/desteapta-te-romane-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1135,7 +1135,7 @@
   "country": "Saudi Arabia",
   "country_slug": "saudi-arabia",
   "english": "Long Live the King",
-  "image": "/saudi-arabia/img/melody-1.webp",
+  "image": "/saudi-arabia/img/aash-al-malik-orchestra-score.png",
   "insts": [
    "flute",
    "horn",
@@ -1165,7 +1165,7 @@
   "country": "Singapore",
   "country_slug": "singapore",
   "english": "Onward Singapore",
-  "image": "/singapore/img/melody-1.webp",
+  "image": "/singapore/img/majulah-singapura-orchestra-score.png",
   "insts": [
    "flute",
    "clarinet",
@@ -1196,7 +1196,7 @@
   "country": "South Africa",
   "country_slug": "south-africa",
   "english": null,
-  "image": "/south-africa/img/melody-1.webp",
+  "image": "/south-africa/img/nkosi-sikelel-iafrika-die-stem-van-suid-afrika-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1227,7 +1227,7 @@
   "country": "South Korea",
   "country_slug": "south-korea",
   "english": "The Patriotic Song",
-  "image": "/south-korea/img/melody-1.webp",
+  "image": "/south-korea/img/aegukga-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1260,7 +1260,7 @@
   "country": "Spain",
   "country_slug": "spain",
   "english": "Royal March",
-  "image": "/spain/img/melody-1.webp",
+  "image": "/spain/img/marcha-real-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1292,7 +1292,7 @@
   "country": "Sweden",
   "country_slug": "sweden",
   "english": "Thou Ancient, Thou Free",
-  "image": "/sweden/img/melody-1.webp",
+  "image": "/sweden/img/du-gamla-du-fria-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1323,7 +1323,7 @@
   "country": "Switzerland",
   "country_slug": "switzerland",
   "english": "Swiss Psalm",
-  "image": "/switzerland/img/melody-1.webp",
+  "image": "/switzerland/img/schweizerpsalm-orchestra-score.png",
   "insts": [
    "flute",
    "clarinet",
@@ -1355,7 +1355,7 @@
   "country": "Taiwan (Republic of China)",
   "country_slug": "taiwan",
   "english": "Three Principles of the People",
-  "image": "/taiwan/img/melody-1.webp",
+  "image": "/taiwan/img/sanmin-zhuyi-orchestra-score.png",
   "insts": [
    "bassoon",
    "horn",
@@ -1385,7 +1385,7 @@
   "country": "Thailand",
   "country_slug": "thailand",
   "english": "Thai National Anthem",
-  "image": "/thailand/img/melody-1.webp",
+  "image": "/thailand/img/phleng-chat-thai-orchestra-score.png",
   "insts": [
    "piccolo",
    "flute",
@@ -1419,7 +1419,7 @@
   "country": "Türkiye",
   "country_slug": "turkiye",
   "english": "Independence March",
-  "image": "/turkiye/img/melody-1.webp",
+  "image": "/turkiye/img/istiklal-mars-orchestra-score.png",
   "insts": [
    "oboe",
    "bassoon",
@@ -1448,7 +1448,7 @@
   "country": "the UAE",
   "country_slug": "uae",
   "english": "Long Live My Nation",
-  "image": "/uae/img/melody-1.webp",
+  "image": "/uae/img/ishy-bilady-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1481,7 +1481,7 @@
   "country": "Ukraine",
   "country_slug": "ukraine",
   "english": "Ukraine's Glory Has Not Yet Perished",
-  "image": "/ukraine/img/melody-1.webp",
+  "image": "/ukraine/img/shche-ne-vmerla-ukrainy-orchestra-score.png",
   "insts": [
    "horn",
    "trumpet",
@@ -1509,7 +1509,7 @@
   "country": "the United Kingdom",
   "country_slug": "united-kingdom",
   "english": null,
-  "image": "/united-kingdom/img/melody-1.webp",
+  "image": "/united-kingdom/img/god-save-the-king-orchestra-score.png",
   "insts": [
    "flute",
    "bassoon",
@@ -1540,7 +1540,7 @@
   "country": "the United States",
   "country_slug": "united-states",
   "english": null,
-  "image": "/united-states/img/melody-1.webp",
+  "image": "/united-states/img/the-star-spangled-banner-orchestra-score.png",
   "insts": [
    "flute",
    "horn",
@@ -1569,7 +1569,7 @@
   "country": "Vatican City",
   "country_slug": "vatican-city",
   "english": "Pontifical Anthem and March",
-  "image": "/vatican-city/img/melody-1.webp",
+  "image": "/vatican-city/img/inno-e-marcia-pontificale-orchestra-score.png",
   "insts": [
    "horn",
    "trumpet",
@@ -1597,7 +1597,7 @@
   "country": "Venezuela",
   "country_slug": "venezuela",
   "english": "Glory to the Brave People",
-  "image": "/venezuela/img/melody-1.webp",
+  "image": "/venezuela/img/gloria-al-bravo-pueblo-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",
@@ -1628,7 +1628,7 @@
   "country": "Vietnam",
   "country_slug": "vietnam",
   "english": "Army March",
-  "image": "/vietnam/img/melody-1.webp",
+  "image": "/vietnam/img/tien-quan-ca-orchestra-score.png",
   "insts": [
    "horn",
    "trumpet",

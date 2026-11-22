@@ -3,8 +3,8 @@
     ~/.anthem-venv/bin/python build/check.py notes [--only argentina-anthem ...]   every engraved note vs song.json
     ~/.anthem-venv/bin/python build/check.py site                                 links, assets, JSON-LD, sitemap, PDFs
 
-`notes` engraves each part as the build does, lets Verovio play it back (renderToMIDI, which undoes the written
-transposition) and compares onset and pitch of every note with the arrangement's quantised notes. Tied continuations
+`notes` engraves each part as the build does, converts it to the MEI the site ships (build.to_mei), lets Verovio play
+it back (renderToMIDI, which undoes the written transposition) and compares onset and pitch of every note with the arrangement's quantised notes. Tied continuations
 are one note; a roll is one note. Any mismatch is listed.
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ sys.path.insert(0, str(HERE))
 import mido  # noqa: E402
 import verovio  # noqa: E402
 
-from build import SKIP, country_slug  # noqa: E402
+from build import SKIP, to_mei  # noqa: E402
 from data import guide_spec, load, load_anthems, load_descriptions, part_dynamics, part_spec  # noqa: E402
 from engrave import DIV, build_score  # noqa: E402
 
@@ -71,7 +71,7 @@ def check_notes(orch: Path, only: list[str] | None):
         miss = []
         for name, spec, dyn in specs:
             xml = build_score(parts=[spec], dynamics={'P1': dyn}, multirest=True, **common)
-            got, want = played(xml), expected(spec)
+            got, want = played(to_mei(xml, 't', 's', 'l', 'r')), expected(spec)
             # a tremolo (roll) note is played as repeated strokes: strokes inside it are not extra notes
             rolls = [(ev.start, ev.end, set(ev.pitches)) for st in spec.events_by_staff for v in st for ev in v
                      if ev.trem or spec.tremolo]
@@ -114,21 +114,44 @@ def check_site():
             errs.append(f'{p.relative_to(DOCS)}: em-dash in copy')
     sm = (DOCS / 'sitemap.xml').read_text() if (DOCS / 'sitemap.xml').exists() else ''
     locs = re.findall(r'<loc>(.*?)</loc>', sm)
-    n_pages = len([p for p in pages if p.parent.name not in ('404', 'privacy')])
+    n_pages = len([p for p in pages if 'name="robots" content="noindex' not in p.read_text()])
     if len(locs) != n_pages:
         errs.append(f'sitemap has {len(locs)} urls, site has {n_pages} pages')
-    # PDFs are made in the browser from the page images: every PDF button must name page images that exist
-    buttons = 0
+    # the score files each page draws (and each PDF button prints), the MIDI and SoundFont files the players play
+    buttons, players = 0, 0
     for p in pages:
-        for pdf, imgs in re.findall(r'data-pdf="([^"]+)" data-pages="([^"]+)"', p.read_text()):
+        h = p.read_text()
+        for src in set(re.findall(r'data-src="([^"]+)"', h)):
             buttons += 1
-            for src in imgs.split():
-                if not (DOCS / src.lstrip('/')).exists():
-                    errs.append(f'{p.relative_to(DOCS)}: {pdf} names a missing page image {src}')
+            f = DOCS / src.lstrip('/')
+            if not f.exists():
+                errs.append(f'{p.relative_to(DOCS)}: missing score file {src}')
+            elif '<mei' not in f.read_text()[:400]:
+                errs.append(f'{p.relative_to(DOCS)}: {src} is not MEI')
+        m = re.search(r'<script type="application/json" id="amPlayer">(.*?)</script>', h, re.S)
+        if 'id="scoreView"' in h:
+            if not m:
+                errs.append(f'{p.relative_to(DOCS)}: score without player data')
+            else:
+                d = json.loads(m.group(1))
+                players += 1
+                for f in [d.get('midi', '')] + d.get('sf', []):
+                    if not f or not (DOCS / f.lstrip('/')).exists():
+                        errs.append(f'{p.relative_to(DOCS)}: player file missing: {f!r}')
+                if not d.get('sf'):
+                    errs.append(f'{p.relative_to(DOCS)}: player without SoundFont files')
+                if not d.get('tempo') or d['tempo'][0][:2] != [0, 0]:
+                    errs.append(f'{p.relative_to(DOCS)}: tempo map does not start at beat 0')
     if list(DOCS.rglob('*.pdf')):
-        errs.append('PDF files in docs/ (they are made in the browser now)')
+        errs.append('PDF files in docs/ (they are made in the browser)')
+    for f in (DOCS / 'assets' / 'js' / 'vendor' / 'spessasynth.js', DOCS / 'assets' / 'js' / 'vendor' / 'spessasynth_processor.min.js'):
+        if not f.exists():
+            errs.append(f'missing {f.relative_to(DOCS)} (node build/synth.mjs)')
+    if list(DOCS.rglob('*.webp')):
+        errs.append('page images (.webp) in docs/ (the score is drawn in the browser)')
     size = sum(f.stat().st_size for f in DOCS.rglob('*') if f.is_file())
-    print(f'{len(pages)} pages, {buttons} PDF buttons, {len(locs)} sitemap urls, docs/ = {size / 1048576:.0f} MB')
+    print(f'{len(pages)} pages, {buttons} score files, {players} pages with the player, {len(locs)} sitemap urls, '
+          f'docs/ = {size / 1048576:.0f} MB')
     for e in errs:
         print(' ', e)
     print('site ok' if not errs else f'{len(errs)} problems')

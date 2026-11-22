@@ -198,6 +198,28 @@ def load(orch: Path, slug: str, anthems: dict, descs: dict) -> Arrangement:
     return arr
 
 
+ABBR = {'piccolo': 'Picc.', 'flute': 'Fl.', 'oboe': 'Ob.', 'clarinet': 'Cl.', 'bassoon': 'Bsn.', 'horn': 'Hn.',
+        'trumpet': 'Tpt.', 'trombone': 'Tbn.', 'tuba': 'Tba.', 'timpani': 'Timp.', 'percussion': 'Perc.', 'harp': 'Hp.',
+        'piano': 'Pno.', 'choir': 'Ch.', 'violin': 'Vln.', 'viola': 'Vla.', 'cello': 'Vc.', 'double-bass': 'Cb.'}
+
+
+def abbreviation(name: str, inst: Instrument) -> str:
+    """The staff name on the second and later systems: 'Violins II' -> 'Vln. II', 'Horns (tune)' -> 'Hn. (tune)',
+    'Tambourine' -> 'Tamb.' (a percussion part named after its instrument)."""
+    base = ABBR.get(inst.slug, name[:4] + '.')
+    m = re.search(r'\b(I{1,3}|IV|\d)$', name)
+    extra = m.group(1) if m else ''
+    paren = re.search(r'(\([^)]*\))', name)
+    if inst.slug == 'percussion' and not re.search(r'percussion', name, re.I):
+        base = re.sub(r'\s*\(.*?\)', '', name)
+        known = {'snare drum': 'S.D.', 'bass drum': 'B.D.', 'cymbals': 'Cym.', 'cymbal': 'Cym.', 'triangle': 'Tri.',
+                 'tambourine': 'Tamb.', 'glockenspiel': 'Glk.', 'tubular bells': 'T.B.', 'bells': 'Bells', 'gong': 'Gong'}
+        base = known.get(base.lower(), base if len(base) <= 6 else base[:4] + '.')
+    if paren and (len(paren.group(1)) > 12 or (inst.slug == 'piano' and 'solo' in paren.group(1).lower())):
+        paren = None
+    return ' '.join(x for x in [base, extra, paren.group(1) if paren else ''] if x)
+
+
 def part_spec(arr: Arrangement, part: Part, pid: str, name: str, written: bool = True) -> PartSpec:
     t = part.track
     drums = bool(t.get('drums'))
@@ -213,7 +235,7 @@ def part_spec(arr: Arrangement, part: Part, pid: str, name: str, written: bool =
         for v in st:
             for ev in v:
                 ev.trem = any((ev.start, p) in part.rolls for p in ev.pitches)
-    abbr = {'Violins I': 'Vln. I', 'Violins II': 'Vln. II'}.get(t['name'], t['name'][:6] + '.')
+    abbr = abbreviation(t['name'], part.inst)
     return PartSpec(pid=pid, name=name, abbr=abbr, inst=part.inst, track=t, events_by_staff=staves,
                     written=written, drums=drums, tremolo=is_tremolo(t), technique=technique_text(t))
 

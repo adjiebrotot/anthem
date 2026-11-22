@@ -74,11 +74,54 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 .part-tab:hover { border-color: var(--ink-line); }
 .part-tab.active { border-color: var(--ink-line); background: var(--brand); color: var(--text-inv); box-shadow: var(--sticker); }
 .part-note { margin: 0 0 10px; font-size: var(--fs-sm); color: var(--muted); }
-.sheet { margin: 0 0 18px; background: var(--paper); border-radius: 6px; overflow: hidden;
-         box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 22px rgba(8,16,40,.14); }
-.sheet img { display: block; width: 100%; height: auto; aspect-ratio: 1240 / 1754; background: var(--paper); }
-.sheet figcaption { font-size: .78rem; color: #5b6475; text-align: center; padding: 6px 0 8px; background: var(--paper); }
-body:not(.light) .sheet img { filter: none; }
+.part-note[hidden] { display: none; }
+
+/* the score, drawn by Verovio in the browser (score.js): white sheets, the notes being played in colour */
+.score-view { position: relative; min-height: 420px; }
+.score-page { position: relative; margin: 0 0 14px; background: var(--paper); border-radius: 6px; overflow: hidden;
+              box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 22px rgba(8,16,40,.14); }
+.score-page svg { position: relative; z-index: 1; display: block; width: 100%; height: auto; color: #111; }
+.score-page g.note { cursor: pointer; }
+.score-page g.playing, .score-page g.playing * { fill: #E0103A; stroke: #E0103A; color: #E0103A; }
+.score-cursor { position: absolute; z-index: 0; width: 18px; margin-left: -9px; border-radius: 9px; pointer-events: none;
+                display: none; background: rgba(0,82,204,.16); box-shadow: inset 0 0 0 1px rgba(0,82,204,.28);
+                transition: left 90ms linear; }
+.score-status { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 420px; padding: 24px;
+                text-align: center; color: var(--muted); font-weight: 600; background: var(--bg-subtle); border-radius: 6px; }
+.score-cursor.is-measure { border-radius: 6px; background: rgba(0,82,204,.09); }
+@media (prefers-reduced-motion: reduce) { .score-cursor { transition: none; } }
+
+/* player: sticks to the top of the screen while the score scrolls under it */
+.player { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+          margin: 0 -16px 14px; padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--border);
+          box-shadow: 0 6px 16px -12px rgba(8,16,40,.35); }
+.player[hidden] { display: none; }
+.pl-play { flex: none; width: 44px; height: 44px; border-radius: 999px; border: 1.5px solid var(--brand); cursor: pointer;
+           background: var(--brand); color: var(--text-inv); box-shadow: var(--sticker-accent); display: inline-flex;
+           align-items: center; justify-content: center; padding: 0; }
+.pl-play:hover { transform: translate(-1px, -1px); }
+.pl-play svg { width: 20px; height: 20px; }
+.pl-play .ico-pause, .pl-play.is-playing .ico-play { display: none; }
+.pl-play.is-playing .ico-pause { display: block; }
+.pl-wait .pl-play { opacity: .7; }
+.pl-main { flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; }
+.pl-title { font-size: .82rem; font-weight: 700; color: var(--muted); }
+.pl-line { display: flex; align-items: center; gap: 10px; }
+.pl-time { font: 500 .82rem/1 'DM Mono', ui-monospace, monospace; color: var(--muted); white-space: nowrap; }
+.pl-seek { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 99px; cursor: pointer; margin: 0;
+           background: linear-gradient(to right, var(--brand) var(--p, 0%), var(--border) var(--p, 0%)); }
+.pl-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--panel);
+           border: 2px solid var(--brand); }
+.pl-seek::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--panel); border: 2px solid var(--brand); }
+.pl-tools { display: flex; align-items: center; gap: 6px; flex: none; }
+.pl-tools select, .pl-tools button { font: 600 .82rem/1 inherit; font-family: inherit; height: 32px; padding: 0 9px; cursor: pointer;
+           border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--panel); color: var(--text); }
+.pl-tools button:hover, .pl-tools select:hover { border-color: var(--ink-line); }
+.pl-follow[aria-pressed="true"] { border-color: var(--ink-line); background: var(--bg-subtle); }
+.pl-follow[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
+.pl-zoom { min-width: 32px; }
+.pl-error .pl-title::after { content: " (the recording could not be loaded)"; color: var(--negative); }
+.player-note { margin: -6px 0 12px; font-size: .8rem; color: var(--muted); }
 
 /* downloads */
 .dl-card, .facts-card { padding: 16px 18px; }
@@ -143,6 +186,9 @@ body:not(.light) .sheet img { filter: none; }
   .container { padding: 0 16px; }
   .nav-hide-sm { display: none !important; }
   .score-card { padding: 10px; }
+  .player { margin: 0 -10px 12px; padding: 8px 10px; }
+  .pl-main { flex-basis: 180px; }
+  .pl-tools { width: 100%; justify-content: flex-end; }
   .field { min-width: 0; width: 100%; }
   .facts div { grid-template-columns: 84px 1fr; }
 }
@@ -155,10 +201,11 @@ body:not(.light) .sheet img { filter: none; }
 .ad-preview .ad-side ins { min-height: 600px; }
 .ad-preview .ad-multi ins { min-height: 280px; }
 .ad-preview .ad-between ins { min-height: 250px; }
+.ad-slot.ad-between:has(ins.adsbygoogle[data-ad-status="filled"]) { margin: 22px 0 4px; }
 
-/* PDF made in the browser (site.js): tip, progress overlay, and the print-only A4 stage.
-   The stage's watermark repeats the page images' own (88 px DM Sans 700 on a 1240 px page, letter-spacing .5 mm
-   of that page, rotated -38deg about the centre), scaled to 210 mm, so the two lie on top of each other. */
+/* PDF made in the browser (score.js): tip, progress overlay, and the print-only A4 stage. Each page is the score
+   drawn by Verovio at A4 with the anthem.adjiebrotots.com watermark BEHIND the notes (the SVG is transparent), so it
+   never covers a note, and a footer line. */
 #printTip, #pdfOverlay { display: none; position: fixed; inset: 0; z-index: 9100; background: rgba(15,23,40,.45);
   backdrop-filter: blur(2px); align-items: center; justify-content: center; padding: 20px; }
 #printTip.visible, #pdfOverlay.visible { display: flex; }
@@ -181,11 +228,10 @@ body:not(.light) .sheet img { filter: none; }
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
 #pdfStage { position: absolute; left: -100000px; top: 0; width: 210mm; }
 .pdf-page { position: relative; width: 210mm; height: 297mm; overflow: hidden; background: #fff; }
-.pdf-page img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.pdf-wm { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-38deg); white-space: nowrap;
-  font: 700 calc(210mm * 88 / 1240) / 1 'DM Sans', Arial, sans-serif; letter-spacing: calc(210mm * .5 / 1240 * 96 / 25.4);
-  color: #000; opacity: .11; pointer-events: none; }
-.pdf-ft { position: absolute; left: 0; right: 0; bottom: 6mm; text-align: center; font: 500 3.2mm/1.2 'DM Sans', Arial, sans-serif; color: #555; }
+.pdf-page svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+.pdf-wm { position: absolute; z-index: 0; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-38deg); white-space: nowrap;
+  font: 700 15mm/1 'DM Sans', Arial, sans-serif; letter-spacing: .5mm; color: #000; opacity: .07; pointer-events: none; }
+.pdf-ft { position: absolute; z-index: 2; left: 0; right: 0; bottom: 6mm; text-align: center; font: 500 3.2mm/1.2 'DM Sans', Arial, sans-serif; color: #555; }
 @page { size: A4; margin: 0; }
 @media print {
   html, body { background: #fff !important; }
