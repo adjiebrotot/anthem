@@ -6,13 +6,13 @@ Canonical site: https://anthem.adjiebrotots.com/
 Sitemap: https://anthem.adjiebrotots.com/sitemap.xml
 Robots: https://anthem.adjiebrotots.com/robots.txt
 Creator: Adjie Brotosukmono (adjiebrotot), https://www.adjiebrotots.com/ (profile for LLMs: https://www.adjiebrotots.com/llms.txt). Sister sites: https://tool.adjiebrotots.com/ (tools), https://blog.adjiebrotots.com/ (blog).
-Access: free, no account. PDFs carry an anthem.adjiebrotots.com watermark.
+Access: free, no account. PDFs are made in the browser and carry a faint anthem.adjiebrotots.com watermark.
 
 ## How the site is laid out
 
-- https://anthem.adjiebrotots.com/<country>/ : the anthem: melody sheet music (with lyrics where sung), melody MIDI, full orchestra MIDI, chorus MIDI, full-score PDF, facts (composer, lyricist, adoption, key, tempo, length).
+- https://anthem.adjiebrotots.com/<country>/ : the anthem: the full orchestra score in concert pitch, drawn in the browser and played along with a recording of the orchestra (the notes light up as they sound); full orchestra MIDI, chorus MIDI, melody MIDI, full-score PDF, facts (composer, lyricist, adoption, key, tempo, length).
+- https://anthem.adjiebrotots.com/<country>/melody/ : the melody as a lead sheet (with lyrics where sung), PDF and MIDI.
 - https://anthem.adjiebrotots.com/<country>/<instrument>/ : that instrument's parts as sheet music, a PDF and a MIDI per part. Instruments: violin, viola, cello, double-bass, piccolo, flute, oboe, clarinet (in B flat), bassoon, horn (French horn in F), trumpet (in B flat), trombone, tuba, timpani, percussion, harp, piano, choir.
-- https://anthem.adjiebrotots.com/<country>/full-score/ : the conductor's score in concert pitch.
 - The melodies are the official tunes, note for note; only the orchestration is new.
 
 ## Anthems

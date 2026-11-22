@@ -1,5 +1,5 @@
 """Site-wide files for anthem.adjiebrotots.com, from build/manifest.json and the pages in docs/:
-home (/), 404.html, privacy/, sitemap.xml (with page images), robots.txt, llms.txt, ads.txt, CNAME, .nojekyll.
+home (/), 404.html, privacy/, sitemap.xml (with each anthem's share image), robots.txt, llms.txt, ads.txt, CNAME, .nojekyll.
 
     ~/.anthem-venv/bin/python build/sitefiles.py      (build.py runs it at the end)
 """
@@ -25,8 +25,8 @@ def home(man: dict) -> str:
     items = [v for _k, v in items_k]
     total_parts = sum(v['parts'] for v in items)
     title = 'National Anthem Sheet Music & Orchestra MIDI | Anthem Madness'
-    desc = (f'Free sheet music and MIDI of {len(items)} national anthems in full orchestral arrangements: the melody '
-            f'with lyrics, every instrument as a PDF part (violin, flute, trumpet ...) and the full score.')
+    desc = (f'Free sheet music and MIDI of {len(items)} national anthems in full orchestral arrangements: read the full '
+            f'score as the orchestra plays, the melody with lyrics and every instrument as a PDF part (violin, flute, trumpet ...).')
     sections = []
     for r in REGION_ORDER:
         group = [v for v in items if v['region'] == r]
@@ -117,7 +117,10 @@ def sitemap() -> tuple[str, int]:
             continue
         url = '/' if rel == '.' else f'/{rel}/'
         h = p.read_text()
-        imgs = re.findall(r'<img src="(/[^"]+\.webp)"[^>]*alt="([^"]*)"', h)[:1]
+        if 'name="robots" content="noindex' in h:      # moved pages (the old /full-score/) and the 404
+            continue
+        imgs = [(i[len(SITE):], '') for i in re.findall(r'<meta property="og:image" content="([^"]+\.png)"', h)
+                if i.startswith(SITE + '/') and '/assets/' not in i][:1]
         depth = url.count('/') - 1
         prio = {0: '1.0', 1: '0.9'}.get(depth, '0.7')
         img = ''.join(f'<image:image><image:loc>{SITE}{s}</image:loc></image:image>' for s, _a in imgs)
@@ -201,14 +204,15 @@ def llms(man: dict) -> str:
              'Creator: Adjie Brotosukmono (adjiebrotot), https://www.adjiebrotots.com/ (profile for LLMs: '
              'https://www.adjiebrotots.com/llms.txt). Sister sites: https://tool.adjiebrotots.com/ (tools), '
              'https://blog.adjiebrotots.com/ (blog).',
-             'Access: free, no account. PDFs carry an anthem.adjiebrotots.com watermark.', '',
+             'Access: free, no account. PDFs are made in the browser and carry a faint anthem.adjiebrotots.com watermark.', '',
              '## How the site is laid out', '',
-             f'- {SITE}/<country>/ : the anthem: melody sheet music (with lyrics where sung), melody MIDI, full orchestra '
-             'MIDI, chorus MIDI, full-score PDF, facts (composer, lyricist, adoption, key, tempo, length).',
+             f'- {SITE}/<country>/ : the anthem: the full orchestra score in concert pitch, drawn in the browser and played '
+             'along with a recording of the orchestra (the notes light up as they sound); full orchestra MIDI, chorus MIDI, '
+             'melody MIDI, full-score PDF, facts (composer, lyricist, adoption, key, tempo, length).',
+             f'- {SITE}/<country>/melody/ : the melody as a lead sheet (with lyrics where sung), PDF and MIDI.',
              f'- {SITE}/<country>/<instrument>/ : that instrument\'s parts as sheet music, a PDF and a MIDI per part. '
              'Instruments: violin, viola, cello, double-bass, piccolo, flute, oboe, clarinet (in B flat), bassoon, '
              'horn (French horn in F), trumpet (in B flat), trombone, tuba, timpani, percussion, harp, piano, choir.',
-             f'- {SITE}/<country>/full-score/ : the conductor\'s score in concert pitch.',
              '- The melodies are the official tunes, note for note; only the orchestration is new.', '',
              '## Anthems', '']
     for k, v in items_k:

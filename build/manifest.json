@@ -34,10 +34,11 @@
   "updated": "2026-11-22"
  },
  "asean-anthem": {
+  "audio": true,
   "country": "ASEAN",
   "country_slug": "asean",
   "english": null,
-  "image": "/asean/img/melody-1.webp",
+  "image": "/asean/img/the-asean-way-orchestra-score.png",
   "insts": [
    "flute",
    "oboe",

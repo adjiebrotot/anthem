@@ -1,0 +1,438 @@
+/* Anthem Madness score viewer, player and PDF.
+
+   The score is drawn here, in the reader's browser, by Verovio (the version build.py engraves with) from the page's
+   MEI file, laid out for the width of the screen. The player plays the orchestra recording and lights up the notes
+   it is playing: Verovio's timemap gives every note's start and end in beats, and the export MIDI's tempo map (in the
+   page, #amPlayer) turns the recording's time into beats. Click a note to play from there.
+   PDF: the score again at A4 (the options build.py counts the pages with), the watermark behind the notes and a
+   footer, through the browser's print dialog ("Save as PDF"). Nothing is stored as PDF. */
+(function () {
+  'use strict';
+  var VEROVIO = 'https://cdn.jsdelivr.net/npm/verovio@6.4.1/dist/verovio-toolkit-wasm.js';
+  var body = document.body;
+
+  function printOptions(full) {      // build.py print_options()
+    var o = { pageWidth: 2100, pageHeight: 2970, scale: full ? 28 : 40, font: 'Leland', footer: 'none', header: 'auto',
+      adjustPageHeight: false, svgViewBox: true, svgRemoveXlink: true, pageMarginTop: 80, pageMarginBottom: 110,
+      pageMarginLeft: 90, pageMarginRight: 90, spacingSystem: full ? 14 : 10 };
+    if (full) { o.condense = 'auto'; o.condenseFirstPage = false; }
+    return o;
+  }
+
+  var ready = null;
+  function verovioReady() {
+    if (ready) return ready;
+    ready = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = VEROVIO; s.async = true; s.crossOrigin = 'anonymous';
+      s.onload = function () {
+        var m = window.verovio && window.verovio.module;
+        if (!m) { reject(new Error('Verovio did not start')); return; }
+        if (m.calledRun) { resolve(); return; }
+        var prev = m.onRuntimeInitialized;
+        m.onRuntimeInitialized = function () { if (prev) prev(); resolve(); };
+      };
+      s.onerror = function () { ready = null; reject(new Error('Verovio did not load')); };
+      document.head.appendChild(s);
+    });
+    return ready;
+  }
+  var texts = {};
+  function fetchText(url) {
+    if (!texts[url]) texts[url] = fetch(url).then(function (r) {
+      if (!r.ok) throw new Error(url + ': ' + r.status);
+      return r.text();
+    }).catch(function (e) { delete texts[url]; throw e; });
+    return texts[url];
+  }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+  function el(tag, cls, html) { var x = document.createElement(tag); if (cls) x.className = cls; if (html) x.innerHTML = html; return x; }
+  function fmt(s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+
+  /* ------------------------------------------------------------------ timeline: recording seconds <-> beats */
+  var dataEl = document.getElementById('amPlayer');
+  var data = dataEl ? JSON.parse(dataEl.textContent) : null;
+  var tempo = data && data.tempo && data.tempo.length ? data.tempo : [[0, 0, 120]];
+  function secToBeat(s) {
+    var i = tempo.length - 1;
+    while (i > 0 && tempo[i][1] > s) i--;
+    return tempo[i][0] + (s - tempo[i][1]) * tempo[i][2] / 60;
+  }
+  function beatToSec(b) {
+    var i = tempo.length - 1;
+    while (i > 0 && tempo[i][0] > b) i--;
+    return tempo[i][1] + (b - tempo[i][0]) * 60 / tempo[i][2];
+  }
+
+  /* ------------------------------------------------------------------ the score on screen */
+  var view = document.getElementById('scoreView');
+  var tk = null, events = [], noteBeat = {}, idx = -1, lastBeat = 0, on = {}, loadedSrc = '', layoutW = 0;
+  var full = view && view.getAttribute('data-full') === '1';
+  var zoomKey = 'am-zoom-' + (full ? 'full' : 'part');
+  var zoom = parseFloat(store(zoomKey)) || 1;
+  var cursor = el('div', 'score-cursor'), curSystem = null, follow = store('am-follow') !== '0';
+
+  function screenOptions(w) {
+    var base = full ? (w < 640 ? 24 : 30) : (w < 640 ? 34 : 42);
+    var scale = Math.max(12, Math.round(base * zoom));
+    var pw = Math.max(600, Math.round(w * 100 / scale));
+    return { pageWidth: pw, pageHeight: Math.round(pw * (full ? 1.6 : 1.414)), scale: scale, adjustPageHeight: true,
+      breaks: 'auto', font: 'Leland', footer: 'none', header: w < 560 ? 'none' : 'auto', svgViewBox: true,
+      svgRemoveXlink: true, pageMarginTop: 60, pageMarginBottom: 60, pageMarginLeft: 50, pageMarginRight: 50,
+      spacingSystem: full ? 12 : 8, condense: full ? 'auto' : 'none', condenseFirstPage: false,
+      lyricSize: 3.6, spacingLinear: !full && w < 640 ? 0.35 : 0.25 };   // room for the words on a phone
+  }
+
+  function status(msg, spin) {
+    view.innerHTML = '';
+    view.appendChild(el('div', 'score-status', (spin ? '<div class="spinner"></div>' : '') + '<span></span>'));
+    view.querySelector('.score-status span').textContent = msg;
+  }
+
+  function draw() {
+    var w = view.clientWidth;
+    if (!tk || !w) return;
+    layoutW = w;
+    tk.setOptions(screenOptions(w));
+    tk.redoLayout();
+    var n = tk.getPageCount(), html = '';
+    for (var i = 1; i <= n; i++) html += '<div class="score-page">' + tk.renderToSVG(i) + '</div>';
+    view.innerHTML = html;
+    view.setAttribute('aria-busy', 'false');
+    curSystem = null;
+    Object.keys(on).forEach(function (id) { var e = document.getElementById(id); if (e) e.classList.add('playing'); });
+    placeCursor(true);
+  }
+
+  function load(src) {
+    loadedSrc = src;
+    view.setAttribute('aria-busy', 'true');
+    if (!tk) status('Loading the score…', true);
+    return Promise.all([verovioReady(), fetchText(src)]).then(function (r) {
+      if (src !== loadedSrc) return;
+      if (!tk) tk = new window.verovio.toolkit();
+      tk.setOptions(screenOptions(view.clientWidth || 800));
+      if (!tk.loadData(r[1])) throw new Error('the score could not be read');
+      events = tk.renderToTimemap({ includeMeasures: true, includeRests: false }) || [];
+      noteBeat = {};
+      events.forEach(function (e) { (e.on || []).forEach(function (id) { noteBeat[id] = e.qstamp; }); });
+      clearAll();
+      draw();
+      seekTo(lastBeat, true);
+    }).catch(function (e) {
+      if (src !== loadedSrc) return;
+      status('The score could not be drawn here (' + e.message + '). The MIDI downloads still work.', false);
+    });
+  }
+
+  /* highlight: walk the timemap to the beat being played */
+  function clearAll() {
+    Object.keys(on).forEach(function (id) { var e = document.getElementById(id); if (e) e.classList.remove('playing'); });
+    on = {}; idx = -1;
+  }
+  function setNote(id, yes) {
+    if (yes) on[id] = 1; else delete on[id];
+    var e = document.getElementById(id);
+    if (e) e.classList.toggle('playing', yes);
+  }
+  function seekTo(beat, quiet) {
+    if (beat < lastBeat - 1e-6) clearAll();
+    lastBeat = beat;
+    var moved = false;
+    while (idx + 1 < events.length && events[idx + 1].qstamp <= beat + 1e-4) {
+      idx++;
+      var ev = events[idx];
+      (ev.off || []).forEach(function (id) { setNote(id, false); });
+      (ev.on || []).forEach(function (id) { setNote(id, true); });
+      if ((ev.on && ev.on.length) || ev.measureOn) moved = true;
+    }
+    if (moved || quiet) placeCursor(quiet);
+  }
+  function lastIndex(test) { for (var i = idx; i >= 0; i--) if (test(events[i])) return i; return -1; }
+  function cursorNote() {     // the latest onset at or before the beat
+    for (var i = idx; i >= 0; i--) if (events[i].on && events[i].on.length) {
+      for (var k = 0; k < events[i].on.length; k++) { var e = document.getElementById(events[i].on[k]); if (e) return e; }
+    }
+    return null;
+  }
+  function placeCursor(quiet) {
+    // while the part rests (a new measure began after its last note ended), the cursor covers that measure
+    var mi = lastIndex(function (e) { return !!e.measureOn; }), ni = lastIndex(function (e) { return e.on && e.on.length; });
+    var resting = mi > ni && !Object.keys(on).length;
+    var note = idx >= 0 ? (resting ? document.getElementById(events[mi].measureOn) : cursorNote()) : null;
+    cursor.classList.toggle('is-measure', !!(note && resting));
+    if (!note) { cursor.style.display = 'none'; return; }
+    var sys = note.closest('.system'), page = note.closest('.score-page'), meas = resting ? note : note.closest('.measure');
+    if (!sys || !page) return;
+    // the cursor spans the staves of the system (not the tempo marks and titles above them)
+    var staves = (meas || sys).querySelectorAll('g.staff'), top = Infinity, bottom = -Infinity;
+    Array.prototype.forEach.call(staves, function (st) {
+      var l = st.querySelector('path, rect') ? st.getBoundingClientRect() : null;
+      if (l && l.height) { top = Math.min(top, l.top); bottom = Math.max(bottom, l.bottom); }
+    });
+    var sr = sys.getBoundingClientRect();
+    if (top === Infinity) { top = sr.top; bottom = sr.bottom; }
+    var head = resting ? (note.querySelector('.staff') || note) : (note.querySelector('.notehead') || note);
+    var hr = head.getBoundingClientRect(), pr = page.getBoundingClientRect();
+    if (cursor.parentNode !== page) page.appendChild(cursor);
+    cursor.style.display = 'block';
+    cursor.style.left = (hr.left - pr.left + hr.width / 2) + 'px';
+    cursor.style.width = resting ? Math.max(18, hr.width - 6) + 'px' : '';
+    cursor.style.marginLeft = resting ? (-Math.max(18, hr.width - 6) / 2) + 'px' : '';
+    cursor.style.top = (top - pr.top - 4) + 'px';
+    cursor.style.height = (bottom - top + 8) + 'px';
+    if (!follow || quiet || !playing()) { curSystem = sys; return; }
+    var barEl = document.getElementById('player');
+    var minTop = barEl ? barEl.getBoundingClientRect().bottom + 12 : 12, maxBottom = window.innerHeight - 12;
+    if (sys !== curSystem && bottom - top <= maxBottom - minTop) {
+      // a new line of music: bring the whole system into view if it is not
+      curSystem = sys;
+      if (top < minTop || bottom > maxBottom) scrollByPx(top - minTop);
+      return;
+    }
+    curSystem = sys;
+    // a system taller than the screen (a full score on a phone): keep the notes being played in view
+    var a = Infinity, z = -Infinity;
+    Object.keys(on).forEach(function (id) {
+      var x = document.getElementById(id);
+      if (!x) return;
+      var r = x.getBoundingClientRect();
+      a = Math.min(a, r.top); z = Math.max(z, r.bottom);
+    });
+    if (a === Infinity) return;
+    if (a < minTop || z > maxBottom) scrollByPx(Math.min(a - minTop, z - maxBottom + (maxBottom - minTop) / 3));
+  }
+  var lastScroll = 0;
+  function scrollByPx(dy) {
+    var now = Date.now();
+    if (Math.abs(dy) < 2 || now - lastScroll < 350) return;
+    lastScroll = now;
+    window.scrollTo({ top: window.scrollY + dy, behavior: 'smooth' });
+  }
+
+  /* ------------------------------------------------------------------ player */
+  var audio = null, raf = 0;
+  var bar = document.getElementById('player');
+  var btn = bar && bar.querySelector('.pl-play'), seek = bar && bar.querySelector('.pl-seek');
+  var cur = bar && bar.querySelector('.pl-cur'), dur = bar && bar.querySelector('.pl-dur');
+  var total = data ? data.length || 0 : 0;
+  function playing() { return audio && !audio.paused && !audio.ended; }
+  function ensureAudio() {
+    if (audio) return audio;
+    audio = new Audio();
+    audio.preload = 'auto';
+    audio.src = data.audio;
+    audio.addEventListener('play', function () { setBtn(true); loop(); });
+    audio.addEventListener('pause', function () { setBtn(false); });
+    audio.addEventListener('ended', function () { setBtn(false); clearAll(); lastBeat = 0; cursor.style.display = 'none'; ui(0); });
+    audio.addEventListener('waiting', function () { bar.classList.add('pl-wait'); });
+    audio.addEventListener('playing', function () { bar.classList.remove('pl-wait'); });
+    audio.addEventListener('loadedmetadata', function () { if (audio.duration) { total = audio.duration; ui(audio.currentTime); } });
+    audio.addEventListener('error', function () { bar.classList.add('pl-error'); setBtn(false); });
+    var sp = bar.querySelector('.pl-speed');
+    if (sp) audio.playbackRate = parseFloat(sp.value) || 1;
+    return audio;
+  }
+  function setBtn(p) {
+    if (!btn) return;
+    btn.classList.toggle('is-playing', p);
+    btn.setAttribute('aria-label', p ? 'Pause' : 'Play');
+  }
+  function ui(t) {
+    if (cur) cur.textContent = fmt(t);
+    if (dur) dur.textContent = fmt(total);
+    if (seek && total) { seek.value = Math.round(t / total * 1000); seek.style.setProperty('--p', (t / total * 100) + '%'); }
+  }
+  function loop() {
+    cancelAnimationFrame(raf);
+    (function tick() {
+      if (!audio) return;
+      var t = audio.currentTime;
+      seekTo(secToBeat(t));
+      ui(t);
+      if (playing()) raf = requestAnimationFrame(tick);
+    })();
+  }
+  function jump(sec) {
+    var a = ensureAudio();
+    sec = Math.max(0, Math.min(sec, (total || 1e9) - 0.05));
+    try { a.currentTime = sec; } catch (e) {}
+    curSystem = null;
+    seekTo(secToBeat(sec), !playing());
+    ui(sec);
+  }
+  function toggle() {
+    var a = ensureAudio();
+    if (playing()) { a.pause(); return; }
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { setBtn(false); });
+    try { if (window.gtag && !toggle.sent) { toggle.sent = 1; window.gtag('event', 'play_score', { page_path: location.pathname }); } } catch (e) {}
+  }
+
+  if (bar && data && data.audio) {
+    bar.hidden = false;
+    ui(0);
+    btn.addEventListener('click', toggle);
+    seek.addEventListener('input', function () { jump(seek.value / 1000 * total); });
+    var sp = bar.querySelector('.pl-speed');
+    if (sp) sp.addEventListener('change', function () { if (audio) audio.playbackRate = parseFloat(sp.value) || 1; });
+    var fb = bar.querySelector('.pl-follow');
+    if (fb) {
+      fb.setAttribute('aria-pressed', follow ? 'true' : 'false');
+      fb.addEventListener('click', function () {
+        follow = !follow; store('am-follow', follow ? '1' : '0');
+        fb.setAttribute('aria-pressed', follow ? 'true' : 'false');
+        if (follow) { curSystem = null; placeCursor(false); }
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      var t = e.target, tag = t && t.tagName;
+      if (e.code !== 'Space' || e.ctrlKey || e.metaKey || e.altKey || /^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/.test(tag || '') || (t && t.isContentEditable)) return;
+      if (!view || !view.getBoundingClientRect || view.getBoundingClientRect().bottom < 0) return;
+      e.preventDefault(); toggle();
+    });
+    if (view) view.addEventListener('click', function (e) {    // a note (or the nearest one to the click): play from there
+      var n = noteAt(e);
+      if (!n) return;
+      jump(beatToSec(noteBeat[n.id]) + 0.001);
+      if (!playing()) toggle();
+    });
+  }
+  function noteAt(e) {
+    var n = e.target.closest && e.target.closest('g.note');
+    if (n && noteBeat[n.id] !== undefined) return n;
+    var page = e.target.closest && e.target.closest('.score-page');
+    if (!page) return null;
+    var best = null, bd = 30 * 30;
+    Array.prototype.forEach.call(page.querySelectorAll('g.note'), function (x) {
+      if (noteBeat[x.id] === undefined) return;
+      var h = (x.querySelector('.notehead') || x).getBoundingClientRect();
+      var dx = e.clientX - (h.left + h.width / 2), dy = e.clientY - (h.top + h.height / 2), d = dx * dx + dy * dy;
+      if (d < bd) { bd = d; best = x; }
+    });
+    return best;
+  }
+  if (bar) Array.prototype.forEach.call(bar.querySelectorAll('[data-zoom]'), function (z) {
+    z.addEventListener('click', function () {
+      zoom = Math.max(0.6, Math.min(2.2, zoom * (z.getAttribute('data-zoom') === '+' ? 1.15 : 1 / 1.15)));
+      store(zoomKey, zoom.toFixed(3));
+      draw();
+    });
+  });
+
+  /* ------------------------------------------------------------------ parts (Violins I, Violins II ...) */
+  var tabs = document.querySelectorAll('.part-tab');
+  function show(key, push) {
+    var src = '';
+    Array.prototype.forEach.call(tabs, function (b) {
+      var yes = b.getAttribute('data-part') === key;
+      b.classList.toggle('active', yes);
+      b.setAttribute('aria-selected', yes ? 'true' : 'false');
+      if (yes) src = b.getAttribute('data-src');
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.part-note[data-part]'), function (p) {
+      p.hidden = p.getAttribute('data-part') !== key;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.dl-row[data-part]'), function (r) {
+      r.classList.toggle('active', r.getAttribute('data-part') === key);
+    });
+    if (push && history.replaceState) history.replaceState(null, '', '#' + key);
+    if (src && src !== loadedSrc && view) load(src);
+  }
+  Array.prototype.forEach.call(tabs, function (b) {
+    b.addEventListener('click', function () { show(b.getAttribute('data-part'), true); });
+  });
+
+  if (view) {
+    var first = view.getAttribute('data-src');
+    var k = location.hash.slice(1);
+    var tab = k && document.querySelector('.part-tab[data-part="' + k + '"]');
+    if (tab) show(k, false); else load(first);
+    var rt = 0;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { if (tk && Math.abs(view.clientWidth - layoutW) > 4) draw(); }, 200);
+    });
+  }
+
+  /* ------------------------------------------------------------------ PDF */
+  var stage = null, tip = null, overlay = null, pending = null, oldTitle = '';
+  function ensureUi() {
+    if (stage) return;
+    stage = el('div'); stage.id = 'pdfStage'; stage.setAttribute('aria-hidden', 'true'); body.appendChild(stage);
+    overlay = el('div'); overlay.id = 'pdfOverlay';
+    overlay.innerHTML = '<div class="pdf-overlay-card"><div class="spinner"></div><div class="pdf-overlay-msg" id="pdfOverlayMsg">Preparing pages…</div></div>';
+    body.appendChild(overlay);
+    tip = el('div'); tip.id = 'printTip'; tip.setAttribute('aria-hidden', 'true');
+    tip.innerHTML = '<div class="print-tip-card" role="dialog" aria-modal="true" aria-labelledby="printTipTitle">' +
+      '<div class="print-tip-title" id="printTipTitle">Save the sheet music as PDF</div>' +
+      '<p class="print-tip-text">A print dialog opens next. Set the <strong>Destination</strong> (or printer) to:</p>' +
+      '<div class="print-tip-do">“Save as PDF” <span>(Chrome, Edge, Android)</span>, “Save to PDF” in Firefox, or PDF › Save as PDF on a Mac and Share › Save to Files on an iPhone</div>' +
+      '<p class="print-tip-text">Or pick your printer to print the parts straight away. Paper: A4, margins: none.</p>' +
+      '<label class="print-tip-skip"><input type="checkbox" id="printTipSkip"/> Don’t show this again</label>' +
+      '<div class="print-tip-actions"><button class="btn btn-ghost" id="printTipCancel" type="button">Cancel</button>' +
+      '<button class="btn btn-primary" id="printTipGo" type="button">Open print dialog</button></div></div>';
+    body.appendChild(tip);
+    document.getElementById('printTipCancel').addEventListener('click', closeTip);
+    tip.addEventListener('click', function (e) { if (e.target === tip) closeTip(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && tip.classList.contains('visible')) closeTip(); });
+    document.getElementById('printTipGo').addEventListener('click', function () {
+      if (document.getElementById('printTipSkip').checked) store('am-skip-pdf-tip', '1');
+      closeTip();
+      if (pending) runPrint(pending);
+    });
+    window.addEventListener('afterprint', cleanup);
+  }
+  function closeTip() { tip.classList.remove('visible'); tip.setAttribute('aria-hidden', 'true'); }
+  function cleanup() {
+    if (stage) stage.innerHTML = '';
+    if (oldTitle) { document.title = oldTitle; oldTitle = ''; }
+  }
+  function requestPdf(b) {
+    ensureUi();
+    pending = b;
+    if (store('am-skip-pdf-tip') === '1') { runPrint(b); return; }
+    document.getElementById('printTipSkip').checked = false;
+    tip.classList.add('visible'); tip.setAttribute('aria-hidden', 'false');
+    document.getElementById('printTipGo').focus();
+  }
+  function runPrint(b) {
+    var src = b.getAttribute('data-src');
+    var footer = b.getAttribute('data-footer') || 'anthem.adjiebrotots.com';
+    var name = (b.getAttribute('data-pdf') || 'sheet-music.pdf').replace(/\.pdf$/, '');
+    var isFull = b.getAttribute('data-full') === '1', extra = {};
+    try { extra = JSON.parse(b.getAttribute('data-print') || '{}'); } catch (e) {}
+    if (!src) return;
+    cleanup();
+    overlay.classList.add('visible');
+    document.getElementById('pdfOverlayMsg').textContent = 'Preparing the pages…';
+    Promise.all([verovioReady(), fetchText(src), document.fonts && document.fonts.ready]).then(function (r) {
+      var ptk = new window.verovio.toolkit();
+      var po = printOptions(isFull);
+      Object.keys(extra).forEach(function (k) { po[k] = extra[k]; });   // what build.py counted the pages with
+      ptk.setOptions(po);
+      if (!ptk.loadData(r[1])) throw new Error('the score could not be read');
+      var n = ptk.getPageCount();
+      for (var i = 1; i <= n; i++) {
+        var pg = el('div', 'pdf-page');
+        pg.appendChild(el('div', 'pdf-wm', 'anthem.adjiebrotots.com'));
+        pg.insertAdjacentHTML('beforeend', ptk.renderToSVG(i));
+        pg.appendChild(el('div', 'pdf-ft')).textContent = footer + ' · page ' + i + ' of ' + n;
+        stage.appendChild(pg);
+      }
+      if (ptk.destroy) ptk.destroy();
+      overlay.classList.remove('visible');
+      oldTitle = document.title;
+      document.title = name;
+      try { if (window.gtag) window.gtag('event', 'file_download', { file_name: name + '.pdf', file_extension: 'pdf', link_text: 'PDF' }); } catch (e) {}
+      requestAnimationFrame(function () { requestAnimationFrame(function () { window.print(); }); });
+    }).catch(function (e) {
+      overlay.classList.remove('visible');
+      alert('The PDF could not be made here (' + e.message + ').');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('button[data-pdf]');
+    if (b) { e.preventDefault(); requestPdf(b); }
+  });
+})();
