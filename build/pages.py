@@ -283,20 +283,30 @@ def score_viewer(c: Ctx, parts, current: str, inst_label: str) -> str:
 </section>'''
 
 
-def download_card(c: Ctx, parts, extra: list[tuple[str, str, str]]) -> str:
+def pdf_button(p, cls: str = 'btn-primary', label: str = 'PDF') -> str:
+    """The PDF is made in the reader's browser from the page images (site.js), with the big watermark and a footer."""
+    n = len(p.pages)
+    return (f'<button type="button" class="btn {cls}" data-pdf="{e(p.pdf)}" data-pages="{" ".join(p.pages)}" '
+            f'data-footer="{e(p.footer)}">{label} <small>{n} page{"s" if n > 1 else ""}</small></button>')
+
+
+def download_card(c: Ctx, parts, extra: list) -> str:
+    """extra: (name, url, 'MIDI') links and (name, ScoreFile, 'PDF') buttons for the whole arrangement."""
     rows = []
     for i, p in enumerate(parts):
         mid = f'<a class="btn btn-ghost" href="{p.mid}" download>MIDI</a>' if p.mid else ''
         rows.append(f'''<li class="dl-row{" active" if i == 0 else ""}" data-part="{p.key}">
   <span class="dl-name">{e(p.label)}{f' <small>{e(p.transpose_name)}</small>' if p.transpose_name else ''}</span>
-  <span class="dl-btns"><a class="btn btn-primary" href="{p.pdf}" download>PDF <small>{kb(p.pdf_bytes)}</small></a>{mid}</span></li>''')
-    more = ''.join(f'<li class="dl-row"><span class="dl-name">{e(n)}</span><span class="dl-btns"><a class="btn btn-ghost" href="{u}" download>{e(t)}</a></span></li>'
-                   for n, u, t in extra)
+  <span class="dl-btns">{pdf_button(p)}{mid}</span></li>''')
+    more = []
+    for n, u, t in extra:
+        btn = pdf_button(u, 'btn-ghost') if t == 'PDF' else f'<a class="btn btn-ghost" href="{u}" download>{e(t)}</a>'
+        more.append(f'<li class="dl-row"><span class="dl-name">{e(n)}</span><span class="dl-btns">{btn}</span></li>')
     return f'''<section class="card dl-card" aria-labelledby="dlTitle">
   <h2 id="dlTitle">Download</h2>
   <ul class="dl-list">{''.join(rows)}</ul>
-  {f'<h3 class="dl-sub">Whole arrangement</h3><ul class="dl-list">{more}</ul>' if more else ''}
-  <p class="dl-note">Free for practice, school and community performance. PDFs carry the anthem.adjiebrotots.com watermark.</p>
+  {f'<h3 class="dl-sub">Whole arrangement</h3><ul class="dl-list">{"".join(more)}</ul>' if more else ''}
+  <p class="dl-note">Free for practice, school and community performance. The PDF is made in your browser from the pages above and carries the anthem.adjiebrotots.com watermark.</p>
 </section>'''
 
 
@@ -421,7 +431,7 @@ def inst_page(c: Ctx, g) -> str:
     extra = [('Full orchestra', c.b.orchestra_mid, 'MIDI')]
     if c.b.chorus_mid:
         extra.append(('Chorus only', c.b.chorus_mid, 'MIDI'))
-    extra.append(('Full score', c.b.full.pdf, 'PDF'))
+    extra.append(('Full score', c.b.full, 'PDF'))
     faq = [(f'Which {name.lower()} parts are in this arrangement?',
             f'{len(parts)} part{"s" if many else ""}: ' + ', '.join(e(p.label) for p in parts)
             + (f'. Parts are written for the {e(inst.name.lower())} {e(inst.transpose_name)}, so they read a transposition above the sounding pitch; the full score is in concert pitch.' if inst.transpose_name else '.'))]
@@ -435,7 +445,6 @@ def inst_page(c: Ctx, g) -> str:
          'primaryImageOfPage': SITE + parts[0].pages[0], 'dateModified': TODAY.isoformat(),
          'author': {'@id': PERSON}},
         composition_ld(c),
-        *[doc_ld(f'{c.title} {p.label} sheet music (PDF)', p.pdf, 'application/pdf', p.pdf_bytes) for p in parts],
         *[doc_ld(f'{c.title} {p.label} (MIDI)', p.mid, 'audio/midi') for p in parts if p.mid],
         crumbs_ld(items), faq_ld(faq)]}
     viewer = score_viewer(c, parts, inst.slug, name)
@@ -471,7 +480,7 @@ def country_page(c: Ctx) -> str:
     extra = [('Full orchestra', c.b.orchestra_mid, 'MIDI')]
     if c.b.chorus_mid:
         extra.append(('Chorus only', c.b.chorus_mid, 'MIDI'))
-    extra.append(('Full score', c.b.full.pdf, 'PDF'))
+    extra.append(('Full score', c.b.full, 'PDF'))
     faq = [(f'Can I download {c.title} as MIDI?',
             f'Yes: the melody alone, the full orchestral arrangement ({len(c.arr.parts)} parts, one track per part) and a short chorus version.'),
            ('Is there sheet music for my instrument?',
@@ -481,7 +490,7 @@ def country_page(c: Ctx) -> str:
         {'@type': 'WebPage', '@id': SITE + url, 'url': SITE + url, 'name': title, 'description': desc,
          'inLanguage': 'en', 'isPartOf': {'@id': SITE + '/#website'}, 'about': {'@id': f'{SITE}{c.base}#anthem'},
          'primaryImageOfPage': SITE + mel.pages[0], 'dateModified': TODAY.isoformat(), 'author': {'@id': PERSON}},
-        composition_ld(c), doc_ld(f'{c.title} melody sheet music (PDF)', mel.pdf, 'application/pdf', mel.pdf_bytes),
+        composition_ld(c),
         doc_ld(f'{c.title} full orchestra (MIDI)', c.b.orchestra_mid, 'audio/midi'),
         crumbs_ld(items), faq_ld(faq)]}
     viewer = score_viewer(c, [mel], 'melody', 'Melody')
@@ -512,7 +521,7 @@ def full_page(c: Ctx) -> str:
         {'@type': 'WebPage', '@id': SITE + url, 'url': SITE + url, 'name': title, 'description': desc, 'inLanguage': 'en',
          'isPartOf': {'@id': SITE + '/#website'}, 'primaryImageOfPage': SITE + fs.pages[0], 'dateModified': TODAY.isoformat(),
          'author': {'@id': PERSON}},
-        composition_ld(c), doc_ld(f'{c.title} full score (PDF)', fs.pdf, 'application/pdf', fs.pdf_bytes),
+        composition_ld(c),
         crumbs_ld(items), faq_ld(faq)]}
     viewer = score_viewer(c, [fs], 'full-score', 'Full score')
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,

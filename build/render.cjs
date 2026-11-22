@@ -1,6 +1,8 @@
-// Renders Verovio SVG pages to PNG page images (light watermark) and to one watermarked A4 PDF per score.
+// Renders Verovio SVG pages to PNG page images with a light watermark (build.py turns them into WebP).
 // node render.cjs jobs.json
-// jobs.json: [{ "svgs": ["p1.svg", ...], "png": ["out1.png", ...], "pdf": "out.pdf", "footer": "text" }]
+// jobs.json: [{ "svgs": ["p1.svg", ...], "png": ["out1.png", ...] }]
+// No PDFs are stored: the site makes them in the reader's browser from these images (docs/assets/js/site.js), and
+// its print stage draws the big watermark exactly over this one (88 px, letter-spacing .5 mm, -38deg, centred).
 const { chromium } = require('playwright');
 const fs = require('fs');
 
@@ -31,7 +33,6 @@ html, body { margin: 0; padding: 0; background: #fff; }
   const jobs = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
   const browser = await chromium.launch();
   const shot = await browser.newPage({ viewport: { width: W, height: H } });
-  const print = await browser.newPage();
   for (const job of jobs) {
     const svgs = job.svgs.map(f => fs.readFileSync(f, 'utf8'));
     // page images: a light watermark, no footer (the page around them says where they come from)
@@ -40,12 +41,6 @@ html, body { margin: 0; padding: 0; background: #fff; }
       await shot.setContent(`<html><head><style>${CSS}.pg{width:${W}px;height:${H}px}.wm{font-size:88px}</style></head>
         <body>${pageHtml(svgs[i], 0.07, '')}</body></html>`);
       await shot.screenshot({ path: job.png[i], clip: { x: 0, y: 0, width: W, height: H } });
-    }
-    if (job.pdf) {
-      const n = svgs.length;
-      const body = svgs.map((s, i) => pageHtml(s, 0.13, `${job.footer} · page ${i + 1} of ${n}`)).join('\n');
-      await print.setContent(`<html><head><style>${CSS}</style></head><body>${body}</body></html>`);
-      await print.pdf({ path: job.pdf, format: 'A4', printBackground: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } });
     }
   }
   await browser.close();

@@ -117,15 +117,18 @@ def check_site():
     n_pages = len([p for p in pages if p.parent.name not in ('404', 'privacy')])
     if len(locs) != n_pages:
         errs.append(f'sitemap has {len(locs)} urls, site has {n_pages} pages')
-    pdfs = sorted(DOCS.rglob('*.pdf'))
-    for pdf in pdfs:
-        info = subprocess.run(['pdfinfo', str(pdf)], capture_output=True, text=True).stdout
-        npages = int(re.search(r'Pages:\s+(\d+)', info).group(1))
-        txt = subprocess.run(['pdftotext', str(pdf), '-'], capture_output=True, text=True).stdout
-        if txt.count('anthem.adjiebrotots.com') < npages:
-            errs.append(f'{pdf.relative_to(DOCS)}: watermark on fewer than {npages} pages')
+    # PDFs are made in the browser from the page images: every PDF button must name page images that exist
+    buttons = 0
+    for p in pages:
+        for pdf, imgs in re.findall(r'data-pdf="([^"]+)" data-pages="([^"]+)"', p.read_text()):
+            buttons += 1
+            for src in imgs.split():
+                if not (DOCS / src.lstrip('/')).exists():
+                    errs.append(f'{p.relative_to(DOCS)}: {pdf} names a missing page image {src}')
+    if list(DOCS.rglob('*.pdf')):
+        errs.append('PDF files in docs/ (they are made in the browser now)')
     size = sum(f.stat().st_size for f in DOCS.rglob('*') if f.is_file())
-    print(f'{len(pages)} pages, {len(pdfs)} PDFs, {len(locs)} sitemap urls, docs/ = {size / 1048576:.0f} MB')
+    print(f'{len(pages)} pages, {buttons} PDF buttons, {len(locs)} sitemap urls, docs/ = {size / 1048576:.0f} MB')
     for e in errs:
         print(' ', e)
     print('site ok' if not errs else f'{len(errs)} problems')
