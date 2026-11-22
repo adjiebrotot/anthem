@@ -60,6 +60,11 @@ show as labelled boxes.
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-22: DESCRIPTIONS.md names a piece without "the" ("Philippines", "UAE") while anthems.py writes "the
+  Philippines": match the overview row on the plain name, or the facts go blank and an anthem with no key signature
+  in its source (UAE) falls back to C (it was engraved in C for F). Full build: 53 anthems, 858 pages, 1,062 PDFs,
+  170 MB, about 25 minutes.
+
 - 2026-11-22: Engrave from `song.json`, not the exported MIDI: the export is humanised (onsets off the grid), while
   song.json has every onset on the beat grid with articulation-shortened lengths (a half note lasts 1.9 beats):
   join an end to the next onset when the gap is under 0.2 beat or 16 %, then snap to the 32nd or triplet grid.

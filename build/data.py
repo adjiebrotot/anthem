@@ -112,7 +112,9 @@ def load(orch: Path, slug: str, anthems: dict, descs: dict) -> Arrangement:
     song = json.loads((w / 'song.json').read_text())
     ana = json.loads((w / 'analysis.json').read_text())
     meta = anthems[slug]
-    desc = descs.get(meta['country'], {})
+    c = meta['country']
+    plain = re.sub(r'\s*\(.*?\)', '', re.sub(r'^the\s+', '', c, flags=re.I))
+    desc = descs.get(c) or descs.get(plain) or next((v for k, v in descs.items() if plain.lower() in k.lower()), {})
     bpb = song['clock']['meter'][0]
     ks = ana.get('key_signatures') or []
     key = ks[0][1] if ks else (desc.get('key_meter', 'C major').split(' ')[0])
