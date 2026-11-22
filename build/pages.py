@@ -47,6 +47,14 @@ def country_title(c: str) -> str:
     return c[4:] if c.lower().startswith('the ') else c
 
 
+ORGS = {'asean-anthem', 'european-union-anthem'}   # anthems of a union of nations, not of a nation
+
+
+def kind(slug: str) -> str:
+    """'National Anthem' or, for ASEAN and the EU, 'Anthem'."""
+    return 'Anthem' if slug in ORGS else 'National Anthem'
+
+
 # ------------------------------------------------------------------------------------------------ manifest
 def registry(built, anthems, orch, slugs_all):
     """Merge this build into build/manifest.json (what exists on the site) and return it."""
@@ -196,6 +204,9 @@ class Ctx:
         self.length = d.get('length', '')
         self.bpm = round(b.arr.tempo[0][1]) if b.arr.tempo else None
         self.native = self.m['native']
+        self.ntitle = self.native[0] if self.native else self.title
+        self.Kind = kind(b.arr.slug)                     # National Anthem / Anthem
+        self.kind = 'the ' + self.Kind.lower()           # the national anthem / the anthem
         self.w = words(b.arr.slug)
 
     def inst_word(self, slug):
@@ -214,7 +225,7 @@ def composition_ld(c: Ctx) -> dict:
     if m.get('english'):
         alt.insert(0, m['english'])
     d = {'@type': 'MusicComposition', '@id': f'{SITE}{c.base}#anthem', 'name': c.title, 'alternateName': alt,
-         'description': f"The national anthem of {c.country}.", 'url': SITE + c.base,
+         'description': f"{c.Kind[0]}{c.Kind[1:].lower()} of {c.country}.", 'url': SITE + c.base,
          'composer': {'@type': 'Person', 'name': m['music']}, 'inLanguage': m['language'],
          'musicArrangement': {'@type': 'MusicComposition', 'name': f'{c.title} (orchestral arrangement)',
                               'creator': {'@id': PERSON}}}
@@ -250,7 +261,7 @@ def score_viewer(c: Ctx, parts, current: str, inst_label: str) -> str:
         figs = []
         for k, src in enumerate(p.pages, 1):
             alt = f'{c.title} {p.label} sheet music, page {k} of {len(p.pages)}'
-            nat = native_phrase(c.arr.slug, current if current != 'melody' else 'melody', c.title)
+            nat = native_phrase(c.arr.slug, current if current != 'melody' else 'melody', c.ntitle)
             if nat:
                 alt += f' ({nat})'
             load = 'eager' if (i == 0 and k == 1) else 'lazy'
@@ -391,16 +402,16 @@ def common_faq(c: Ctx, what: str) -> list[tuple[str, str]]:
 def inst_page(c: Ctx, g) -> str:
     inst = g.inst
     parts = g.parts
-    nat = native_phrase(c.arr.slug, inst.slug, c.title)
+    nat = native_phrase(c.arr.slug, inst.slug, c.ntitle)
     many = len(parts) > 1
     name = inst.name
     url = f'{c.base}{inst.slug}/'
-    title = f'{c.title} {name} Sheet Music (PDF) & MIDI | National Anthem of {c.ct}'
-    desc = (f'Free {name.lower()} sheet music and MIDI of {c.title}, the national anthem of {c.country}, from a full '
+    title = f'{c.title} {name} Sheet Music (PDF) & MIDI | {c.Kind} of {c.ct}'
+    desc = (f'Free {name.lower()} sheet music and MIDI of {c.title}, {c.kind} of {c.country}, from a full '
             f'orchestral arrangement: {", ".join(p.label for p in parts)}. Download the PDF or MIDI.'
             + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: {e(name)} Sheet Music'
-    lead_bits = [f'National Anthem of {e(c.ct)}']
+    lead_bits = [f'{c.Kind} of {e(c.ct)}']
     if c.native and c.native[0] != c.title:
         lead_bits.append(f'<span lang="und">{e(c.native[0])}</span>')
     if nat:
@@ -415,7 +426,7 @@ def inst_page(c: Ctx, g) -> str:
             f'{len(parts)} part{"s" if many else ""}: ' + ', '.join(e(p.label) for p in parts)
             + (f'. Parts are written for the {e(inst.name.lower())} {e(inst.transpose_name)}, so they read a transposition above the sounding pitch; the full score is in concert pitch.' if inst.transpose_name else '.'))]
     faq += common_faq(c, f'{name.lower()} sheet music')
-    lead_sentence = (f'<p class="geo">{e(c.title)} is the national anthem of {e(c.country)}. This page has the '
+    lead_sentence = (f'<p class="geo">{e(c.title)} is {c.kind} of {e(c.country)}. This page has the '
                      f'{e(name.lower())} part{"s" if many else ""} of a full orchestral arrangement as sheet music to read and print, '
                      f'with a PDF and a MIDI file for each part.</p>')
     ld = {'@context': 'https://schema.org', '@graph': [
@@ -437,14 +448,14 @@ def inst_page(c: Ctx, g) -> str:
 
 def country_page(c: Ctx) -> str:
     mel = c.b.melody
-    nat = native_phrase(c.arr.slug, None, c.title)
+    nat = native_phrase(c.arr.slug, None, c.ntitle)
     url = c.base
-    title = f'{c.title} Sheet Music & MIDI: National Anthem of {c.ct} (Orchestra)'
-    desc = (f'{c.title}, the national anthem of {c.country}: free melody sheet music'
+    title = f'{c.title} Sheet Music & MIDI: {c.Kind} of {c.ct} (Orchestra)'
+    desc = (f'{c.title}, {c.kind} of {c.country}: free melody sheet music'
             + (' with lyrics' if c.arr.lyrics else '') +
             f', a full orchestral MIDI and the sheet music of every instrument ({len(c.arr.parts)} parts) as PDF.'
             + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
-    h1 = f'{e(c.title)}: National Anthem of {e(c.ct)}'
+    h1 = f'{e(c.title)}: {c.Kind} of {e(c.ct)}'
     bits = []
     if c.m.get('english'):
         bits.append(e(c.m['english']))
@@ -452,7 +463,7 @@ def country_page(c: Ctx) -> str:
         bits.append(f'<span lang="und">{e(c.native[0])}</span>')
     bits.append('Melody, orchestra MIDI and sheet music for every instrument')
     lead = ' · '.join(bits)
-    lead_sentence = (f'<p class="geo">{e(c.title)} is the national anthem of {e(c.country)}, with music by '
+    lead_sentence = (f'<p class="geo">{e(c.title)} is {c.kind} of {e(c.country)}, with music by '
                      f'{e(c.m["music"])}. Below is its melody as sheet music'
                      + (' with the words' if c.arr.lyrics else '') +
                      f', a MIDI file of a full {len(c.arr.parts)}-part orchestral arrangement, and the sheet music for each instrument of that orchestra.</p>')
@@ -483,13 +494,13 @@ def country_page(c: Ctx) -> str:
 
 def full_page(c: Ctx) -> str:
     fs = c.b.full
-    nat = native_phrase(c.arr.slug, 'full-score', c.title)
+    nat = native_phrase(c.arr.slug, 'full-score', c.ntitle)
     url = f'{c.base}full-score/'
-    title = f'{c.title} Full Orchestra Score (PDF) | National Anthem of {c.ct}'
-    desc = (f'The full orchestral score of {c.title}, the national anthem of {c.country}: all {len(c.arr.parts)} parts '
+    title = f'{c.title} Full Orchestra Score (PDF) | {c.Kind} of {c.ct}'
+    desc = (f'The full orchestral score of {c.title}, {c.kind} of {c.country}: all {len(c.arr.parts)} parts '
             f'in concert pitch, free PDF and MIDI.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: Full Orchestra Score'
-    lead = f'National Anthem of {e(c.ct)} · {len(c.arr.parts)} parts in concert pitch' + (f' · {e(nat)}' if nat else '')
+    lead = f'{c.Kind} of {e(c.ct)} · {len(c.arr.parts)} parts in concert pitch' + (f' · {e(nat)}' if nat else '')
     lead_sentence = (f'<p class="geo">The conductor\'s score of an orchestral arrangement of {e(c.title)}, the national '
                      f'anthem of {e(c.country)}: every part on one page, in concert pitch, with empty staves hidden.</p>')
     items = [('Anthems', '/'), (c.ct, c.base), ('Full score', url)]

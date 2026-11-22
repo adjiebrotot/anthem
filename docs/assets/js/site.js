@@ -39,6 +39,21 @@
     if (document.querySelector('.score-part[data-part="' + k + '"]')) show(k, false);
   }
 
+  // home: filter the anthem cards as the reader types
+  var q = document.getElementById('anSearch');
+  if (q) q.addEventListener('input', function () {
+    var v = q.value.trim().toLowerCase(), any = false;
+    Array.prototype.forEach.call(document.querySelectorAll('.region'), function (r) {
+      var shown = 0;
+      Array.prototype.forEach.call(r.querySelectorAll('.an-card'), function (c) {
+        var on = !v || c.getAttribute('data-search').indexOf(v) >= 0;
+        c.hidden = !on; if (on) shown++;
+      });
+      r.hidden = !shown; if (shown) any = true;
+    });
+    var nm = document.getElementById('noMatch'); if (nm) nm.hidden = any;
+  });
+
   // off the live site (a preview), show where each ad unit sits instead of asking Google for one
   if (!/(^|\.)adjiebrotots\.com$/.test(location.hostname)) {
     document.documentElement.classList.add('ad-preview');
