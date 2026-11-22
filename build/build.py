@@ -124,10 +124,12 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
     if cache.exists():
         shutil.rmtree(cache)
     cache.mkdir(parents=True)
-    common = dict(title=m['title'], subtitle=f"National Anthem of {m['country']}",
-                  composer=f"Music: {m['music']}", lyricist='', arranger=ARRANGER,
+    from pages import kind
+    # the composer goes on the subtitle line: a long name beside the title collides with it on the page
+    common = dict(title=m['title'], subtitle=f"{kind(slug)} of {m['country']} \u00b7 Music: {m['music']}",
+                  composer='', lyricist='', arranger=ARRANGER,
                   beats_per_bar=arr.beats_per_bar, total_bars=arr.total_bars, concert_fifths=arr.fifths,
-                  mode=arr.mode, tempo=arr.tempo, rehearsal=arr.rehearsal)
+                  mode=arr.mode, tempo=arr.tempo, rehearsal=arr.rehearsal, keys=arr.keys)
 
     def score(key: str, label: str, xml: str, folder: Path, url: str, footer: str, full: bool = False) -> ScoreFile:
         folder.mkdir(parents=True, exist_ok=True)
@@ -243,6 +245,8 @@ def main():
         built.append(b)
     all_built = pages.registry(built, anthems, orch, slugs_all=[s for s in anthems if s not in SKIP])
     pages.write_all(built, all_built)
+    import sitefiles  # home, 404, sitemap, robots, llms.txt, ads.txt, CNAME
+    sitefiles.main()
 
 
 if __name__ == '__main__':

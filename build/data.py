@@ -65,6 +65,7 @@ class Arrangement:
     tempo: list
     parts: list[Part] = field(default_factory=list)
     rehearsal: dict = field(default_factory=dict)
+    keys: dict = field(default_factory=dict)       # key changes: division -> (fifths, mode)
     guide: list = field(default_factory=list)      # (start, end, pitch)
     lyrics: dict = field(default_factory=dict)     # guide note index -> lyric dict
     export_mid: Path | None = None
@@ -155,6 +156,19 @@ def load(orch: Path, slug: str, anthems: dict, descs: dict) -> Arrangement:
             k += 1
     # guide melody and lyrics
     g = json.loads((w / 'guide.json').read_text())['notes']
+    # key changes: a source bar -> the arrangement bar through the tune (the i-th source note is the i-th guide note)
+    src_mel = sorted(ana['melody']['notes'], key=lambda n: (n[0], n[2]))
+    gsorted = sorted(g, key=lambda n: (n[0], n[2]))
+    for kbar, kname in ks[1:]:
+        if len(src_mel) != len(gsorted):
+            break
+        start = (kbar - 1) * bpb
+        i = next((k for k, n in enumerate(src_mel) if n[0] >= start - 1e-6), None)
+        if i is None:
+            continue
+        at = gsorted[i][0] - (src_mel[i][0] - start)       # arrangement beat of that source barline
+        mbar = round(at / bpb)
+        arr.keys[mbar * bar] = key_fifths(kname)
     gnotes = [dict(on=n[0], duration=n[1], pitch=n[2]) for n in g]
     arr.guide = quantise(gnotes)
     lm = w / 'lyrics-map.json'

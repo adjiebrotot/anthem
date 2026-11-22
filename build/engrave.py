@@ -535,7 +535,9 @@ def dynamics_marks(qnotes_vel: list[tuple[int, int, int, int]]) -> dict[int, str
 def build_score(*, title: str, subtitle: str, composer: str, lyricist: str, arranger: str, parts: list[PartSpec],
                 beats_per_bar: int, total_bars: int, concert_fifths: int, mode: str, tempo: list,
                 rehearsal: dict[int, str], dynamics: dict[str, dict[int, str]], multirest: bool,
-                header_part_name: str = '') -> str:
+                header_part_name: str = '', keys: dict[int, tuple[int, str]] | None = None) -> str:
+    """keys: key changes after the start, {division at a barline: (concert fifths, mode)}."""
+    keys = {k: v for k, v in (keys or {}).items() if k > 0}
     bar = beats_per_bar * DIV
     total = total_bars * bar
     tmarks = tempo_marks(tempo, bar, total)
@@ -610,7 +612,7 @@ def build_score(*, title: str, subtitle: str, composer: str, lyricist: str, arra
                 if empty[m] and m * bar not in rehearsal:
                     k = m
                     while (k + 1 < total_bars and empty[k + 1] and (k + 1) * bar not in tmarks
-                           and (k + 1) * bar not in rehearsal):
+                           and (k + 1) * bar not in rehearsal and (k + 1) * bar not in keys):
                         k += 1
                     if k > m:
                         runs[m] = k - m + 1
@@ -637,6 +639,12 @@ def build_score(*, title: str, subtitle: str, composer: str, lyricist: str, arra
                 stv = f'<staves>{nstaves}</staves>' if nstaves > 1 else ''
                 out.append(f'<attributes><divisions>{DIV}</divisions>{key}<time><beats>{beats_per_bar}</beats>'
                            f'<beat-type>4</beat-type></time>{stv}{clefs}{tr}</attributes>')
+            if m0 in keys and not ps.drums:
+                kf, km = keys[m0]
+                fifths = transpose_fifths(kf, semis)
+                kmode = km if semis == 0 else 'major'
+                sp = Speller(fifths, kmode)
+                out.append(f'<attributes><key><fifths>{fifths}</fifths><mode>{kmode}</mode></key></attributes>')
             if m in runs:
                 out.append(f'<attributes><measure-style><multiple-rest>{runs[m]}</multiple-rest></measure-style>'
                            f'</attributes>')
