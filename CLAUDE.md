@@ -97,8 +97,10 @@ Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
   signature: `pitched_key_changes()` rewrites it as staffDefs of the pitched staves. A full score's first page (every
   staff) was taller than A4 at scale 28 (the bottom staves fell off the page and under the footer): `a4_pages()`
   closes up `spacingStaff` until every page fits and passes it to the PDF button (`data-print`).
-- 2026-11-22: Audio: the music-production render of song.json takes about 100 s and 4 GB per anthem (delete it after
-  encoding); its notes equal the export MIDI's exactly and it starts at beat 0, so the export's tempo map (with its
+- 2026-11-22: Audio: the music-production render of song.json takes about 100 s and 2 to 5 GB per anthem, and the
+  skill keeps a cache BESIDE the output folder (`renders/cache`): the first batch filled a 60 GB disk after 18 anthems.
+  `audio.py` renders into `build/.cache/render/<slug>/` and deletes all of it (never anthem-orchestra's own
+  `work/<slug>/renders`, which holds the user's renders); its notes equal the export MIDI's exactly and it starts at beat 0, so the export's tempo map (with its
   rubato ramps) syncs recording and score. 101 minutes of music at 96 kbps AAC = about 75 MB, the size of the WebP
   pages it replaced. Arrangements use the `vcsl_world` bank too (not in `music-setup.sh orchestra`).
 - 2026-11-22: Clicks rarely hit a note's glyphs (the SVG between head and stem is transparent): the player picks the
