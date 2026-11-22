@@ -1,9 +1,9 @@
 /* Anthem Madness score viewer, player and PDF.
 
    The score is drawn here, in the reader's browser, by Verovio (the version build.py engraves with) from the page's
-   MEI file, laid out for the width of the screen. The player plays the orchestra recording and lights up the notes
-   it is playing: Verovio's timemap gives every note's start and end in beats, and the export MIDI's tempo map (in the
-   page, #amPlayer) turns the recording's time into beats. Click a note to play from there.
+   MEI file, laid out for the width of the screen. The player plays the orchestra MIDI in a SoundFont synth and lights
+   up the notes it is playing: Verovio's timemap gives every note's start and end in beats, and the MIDI's tempo map
+   (in the page, #amPlayer) turns the player's time into beats. Click a note to play from there.
    PDF: the score again at A4 (the options build.py counts the pages with), the watermark behind the notes and a
    footer, through the browser's print dialog ("Save as PDF"). Nothing is stored as PDF. */
 (function () {
@@ -49,7 +49,7 @@
   function el(tag, cls, html) { var x = document.createElement(tag); if (cls) x.className = cls; if (html) x.innerHTML = html; return x; }
   function fmt(s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
 
-  /* ------------------------------------------------------------------ timeline: recording seconds <-> beats */
+  /* ------------------------------------------------------------------ timeline: MIDI seconds <-> beats */
   var dataEl = document.getElementById('amPlayer');
   var data = dataEl ? JSON.parse(dataEl.textContent) : null;
   var tempo = data && data.tempo && data.tempo.length ? data.tempo : [[0, 0, 120]];
@@ -210,29 +210,94 @@
     window.scrollTo({ top: window.scrollY + dy, behavior: 'smooth' });
   }
 
-  /* ------------------------------------------------------------------ player */
-  var audio = null, raf = 0;
+  /* ------------------------------------------------------------------ player
+     The orchestra MIDI (the file the orchestra app plays) in spessasynth, a SoundFont synth in an AudioWorklet, with
+     the app's SoundFont (Pawchestra: VSCO 2 CE and VCSL over GeneralUser GS), one file per instrument
+     (build/synth.mjs): the page loads only the instruments its MIDI plays, on the first press of play. */
+  var VENDOR = '/assets/js/vendor/';
+  var seq = null, synthRef = null, ctx = null, loading = null, raf = 0, wantPlay = false, pendingSec = 0, rate = 1;
+  var mix = 'all', partChannel = view && view.hasAttribute('data-channel') ? +view.getAttribute('data-channel') : -1;
+  // instrument pages: the full orchestra, the part alone, or the orchestra without it (to play along)
+  function applyMix() {
+    if (!synthRef || partChannel < 0) return;
+    synthRef.midiChannels.forEach(function (ch, i) {
+      var muted = mix === 'solo' ? i !== partChannel : mix === 'minus' ? i === partChannel : false;
+      if (ch.systemParameters.isMuted !== muted) ch.setSystemParameter('isMuted', muted);
+    });
+  }
   var bar = document.getElementById('player');
   var btn = bar && bar.querySelector('.pl-play'), seek = bar && bar.querySelector('.pl-seek');
   var cur = bar && bar.querySelector('.pl-cur'), dur = bar && bar.querySelector('.pl-dur');
+  var title = bar && bar.querySelector('.pl-title'), titleText = title ? title.textContent : '';
   var total = data ? data.length || 0 : 0;
-  function playing() { return audio && !audio.paused && !audio.ended; }
-  function ensureAudio() {
-    if (audio) return audio;
-    audio = new Audio();
-    audio.preload = 'auto';
-    audio.src = data.audio;
-    audio.addEventListener('play', function () { setBtn(true); loop(); });
-    audio.addEventListener('pause', function () { setBtn(false); });
-    audio.addEventListener('ended', function () { setBtn(false); clearAll(); lastBeat = 0; cursor.style.display = 'none'; ui(0); });
-    audio.addEventListener('waiting', function () { bar.classList.add('pl-wait'); });
-    audio.addEventListener('playing', function () { bar.classList.remove('pl-wait'); });
-    audio.addEventListener('loadedmetadata', function () { if (audio.duration) { total = audio.duration; ui(audio.currentTime); } });
-    audio.addEventListener('error', function () { bar.classList.add('pl-error'); setBtn(false); });
-    var sp = bar.querySelector('.pl-speed');
-    if (sp) audio.playbackRate = parseFloat(sp.value) || 1;
-    return audio;
+  function playing() { return !!(seq && !seq.paused); }
+  function now() { return seq ? seq.currentHighResolutionTime : pendingSec; }
+  function fetchBuf(url) {
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error(url + ': ' + r.status); return r.arrayBuffer(); });
   }
+  function say(msg) { if (title) title.textContent = msg || titleText; }
+  function ensureSynth() {
+    if (loading) return loading;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC || !window.AudioWorkletNode) return Promise.reject(new Error('this browser cannot play it'));
+    ctx = new AC();
+    bar.classList.add('pl-wait');
+    var files = data.sf || [], done = 0;
+    say('Loading the orchestra…');
+    function count(p) { return p.then(function (b) { done++; say('Loading the orchestra… ' + done + ' of ' + (files.length + 1)); return b; }); }
+    loading = Promise.all([
+      ctx.audioWorklet.addModule(VENDOR + 'spessasynth_processor.min.js'),
+      import(VENDOR + 'spessasynth.js'),
+      count(fetchBuf(data.midi))
+    ].concat(files.map(function (f) { return count(fetchBuf(f)); }))).then(function (r) {
+      var lib = r[1], midi = r[2], banks = r.slice(3);
+      var synth = new lib.WorkletSynthesizer(ctx);
+      // the orchestra app's level: the piece's gain to -16 LUFS (build.py, measured by build/synth.mjs), then a limiter
+      var gain = ctx.createGain(), limiter = ctx.createDynamicsCompressor();
+      gain.gain.value = Math.pow(10, (data.gain || 0) / 20);
+      limiter.threshold.value = -2; limiter.knee.value = 0; limiter.ratio.value = 20;
+      limiter.attack.value = 0.002; limiter.release.value = 0.15;
+      synth.connect(gain); gain.connect(limiter); limiter.connect(ctx.destination);
+      // spessasynth reports a new channel's default settings before the channel itself (the orchestra MIDIs open a
+      // second port, channels 17 to 32): skip those reports, the channel starts with the defaults anyway
+      var receive = synth.receiveEventCallback;
+      synth.receiveEventCallback = function (ev) {
+        var ch = ev && ev.data && ev.data.channel;
+        if (typeof ch === 'number' && !this.midiChannels[ch]) return;
+        return receive.call(this, ev);
+      };
+      return Promise.resolve(synth.isReady).then(function () {
+        return banks.reduce(function (p, b, i) {
+          return p.then(function () { return synth.soundBankManager.addSoundBank(b, 'am' + i); });
+        }, Promise.resolve());
+      }).then(function () {
+        seq = new lib.Sequencer(synth, { skipToFirstNoteOn: false });
+        seq.loopCount = 0;
+        seq.playbackRate = rate;
+        return new Promise(function (resolve) {
+          seq.eventHandler.addEvent('songChange', 'am', function () { resolve(); });
+          seq.eventHandler.addEvent('songEnded', 'am', ended);
+          seq.loadNewSongList([{ binary: midi, fileName: 'anthem.mid' }]);
+        });
+      }).then(function () {
+        synthRef = synth;
+        applyMix();
+        if (seq.duration) total = seq.duration;
+        seq.currentTime = pendingSec;
+        bar.classList.remove('pl-wait');
+        say('');
+      });
+    }).catch(function (e) {
+      loading = null;
+      bar.classList.remove('pl-wait');
+      bar.classList.add('pl-error');
+      say('The orchestra could not play here (' + e.message + ')');
+      setBtn(false);
+      throw e;
+    });
+    return loading;
+  }
+  function ended() { setBtn(false); clearAll(); lastBeat = 0; pendingSec = 0; cursor.style.display = 'none'; ui(0); }
   function setBtn(p) {
     if (!btn) return;
     btn.classList.toggle('is-playing', p);
@@ -246,36 +311,47 @@
   function loop() {
     cancelAnimationFrame(raf);
     (function tick() {
-      if (!audio) return;
-      var t = audio.currentTime;
+      if (!seq) return;
+      var t = now();
       seekTo(secToBeat(t));
       ui(t);
       if (playing()) raf = requestAnimationFrame(tick);
+      else setBtn(false);
     })();
   }
   function jump(sec) {
-    var a = ensureAudio();
     sec = Math.max(0, Math.min(sec, (total || 1e9) - 0.05));
-    try { a.currentTime = sec; } catch (e) {}
+    pendingSec = sec;
+    if (seq) seq.currentTime = sec;
     curSystem = null;
     seekTo(secToBeat(sec), !playing());
     ui(sec);
   }
+  function start() {
+    if (ctx && ctx.state !== 'running') ctx.resume();
+    seq.play();
+    setBtn(true);
+    loop();
+  }
   function toggle() {
-    var a = ensureAudio();
-    if (playing()) { a.pause(); return; }
-    var p = a.play();
-    if (p && p.catch) p.catch(function () { setBtn(false); });
+    if (playing()) { seq.pause(); setBtn(false); pendingSec = seq.currentTime; return; }
     try { if (window.gtag && !toggle.sent) { toggle.sent = 1; window.gtag('event', 'play_score', { page_path: location.pathname }); } } catch (e) {}
+    if (seq) { start(); return; }
+    wantPlay = true;
+    setBtn(true);
+    ensureSynth().then(function () { if (wantPlay) start(); }, function () {});
+    if (ctx && ctx.state !== 'running') ctx.resume();   // inside the click: browsers start audio only on a gesture
   }
 
-  if (bar && data && data.audio) {
+  if (bar && data && data.midi) {
     bar.hidden = false;
     ui(0);
-    btn.addEventListener('click', toggle);
+    btn.addEventListener('click', function () { if (loading && !seq) { wantPlay = !wantPlay; setBtn(wantPlay); return; } toggle(); });
     seek.addEventListener('input', function () { jump(seek.value / 1000 * total); });
     var sp = bar.querySelector('.pl-speed');
-    if (sp) sp.addEventListener('change', function () { if (audio) audio.playbackRate = parseFloat(sp.value) || 1; });
+    if (sp) sp.addEventListener('change', function () { rate = parseFloat(sp.value) || 1; if (seq) seq.playbackRate = rate; });
+    var mx = bar.querySelector('.pl-mix');
+    if (mx) mx.addEventListener('change', function () { mix = mx.value; applyMix(); });
     var fb = bar.querySelector('.pl-follow');
     if (fb) {
       fb.setAttribute('aria-pressed', follow ? 'true' : 'false');
@@ -328,7 +404,10 @@
       var yes = b.getAttribute('data-part') === key;
       b.classList.toggle('active', yes);
       b.setAttribute('aria-selected', yes ? 'true' : 'false');
-      if (yes) src = b.getAttribute('data-src');
+      if (yes) {
+        src = b.getAttribute('data-src');
+        if (b.hasAttribute('data-channel')) { partChannel = +b.getAttribute('data-channel'); applyMix(); }
+      }
     });
     Array.prototype.forEach.call(document.querySelectorAll('.part-note[data-part]'), function (p) {
       p.hidden = p.getAttribute('data-part') !== key;

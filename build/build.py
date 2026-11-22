@@ -4,8 +4,9 @@
 
 Per arrangement: MusicXML per part (written pitch), the melody with lyrics and the full score (concert pitch), each
 converted by Verovio to a compact MEI file that the page draws in the reader's browser (docs/assets/js/score.js,
-the same Verovio version) and plays along with the orchestra recording (build/audio.py); the export MIDI's tempo map
-that syncs the two; one-track MIDI per part; one share image per anthem; the HTML pages (pages.py).
+the same Verovio version) and plays along with the orchestra MIDI in a SoundFont synth (build/synth.mjs); the MIDI's
+tempo map that syncs the two and the presets it needs; one-track MIDI per part; one share image per anthem; the HTML
+pages (pages.py).
 The anthem-orchestra checkout is only read.
 """
 from __future__ import annotations
@@ -63,6 +64,7 @@ class ScoreFile:
     footer: str = ''         # the PDF's footer line
     mid: str = ''            # site path
     transpose_name: str = ''
+    channel: int | None = None    # the part's synth channel in the orchestra MIDI (port * 16 + channel)
 
 
 @dataclass
@@ -82,9 +84,7 @@ class Built:
     orchestra_mid: str = ''
     chorus_mid: str = ''
     melody_mid: str = ''
-    audio: str = ''          # site path of the orchestra recording ('' when not rendered yet)
-    audio_seconds: float = 0
-    tempo: list = field(default_factory=list)       # [beat, second, bpm] at each tempo change of the export MIDI
+    player: dict = field(default_factory=dict)     # what score.js plays: midi, sf (preset files), tempo, length
     image: str = ''          # share image (og:image, sitemap)
 
 
@@ -181,7 +181,7 @@ def a4_pages(mei: str, full: bool) -> tuple[int, str, dict]:
 
 
 def tempo_map(mid: Path) -> list:
-    """[beat, second, bpm] at the start and at every tempo change of the export MIDI (the recording's timeline)."""
+    """[beat, second, bpm] at the start and at every tempo change of the export MIDI (the timeline the player plays)."""
     mf = mido.MidiFile(mid)
     ppq = mf.ticks_per_beat
     changes = []
@@ -204,6 +204,17 @@ def tempo_map(mid: Path) -> list:
     return out
 
 
+def synth_channel(src: Path, track_index: int) -> int | None:
+    """The channel a part plays on in the browser synth: spessasynth gives MIDI port p channels p*16 to p*16+15."""
+    port, ch = 0, None
+    for msg in mido.MidiFile(src).tracks[track_index]:
+        if msg.type == 'midi_port':
+            port = msg.port
+        elif ch is None and hasattr(msg, 'channel'):
+            ch = msg.channel
+    return None if ch is None else port * 16 + ch
+
+
 def write_part_midi(src: Path, track_index: int, out: Path, name: str):
     """The exported MIDI's conductor track (title, tempo map, meter, key) plus one part's track."""
     mf = mido.MidiFile(src)
@@ -214,13 +225,41 @@ def write_part_midi(src: Path, track_index: int, out: Path, name: str):
     new.save(out)
 
 
-def audio_seconds(path: Path) -> float:
-    r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(path)],
-                       capture_output=True, text=True)
-    try:
-        return round(float(r.stdout.strip()), 2)
-    except ValueError:
-        return 0
+SF_INDEX = DOCS / 'assets' / 'sf' / 'index.json'
+LOUDNESS = DOCS / 'assets' / 'sf' / 'loudness.json'
+TARGET_LUFS = -16          # the orchestra app's level (AES TD1008); the page's limiter catches the peaks above
+
+
+def gain_db(site_path: str, mid: Path) -> float:
+    """The gain that brings the synth's rendering of this MIDI to TARGET_LUFS (loudness.json, build/synth.mjs)."""
+    import hashlib
+    row = json.loads(LOUDNESS.read_text()).get(site_path)
+    if not row or row['hash'] != hashlib.sha256(mid.read_bytes()).hexdigest()[:16]:
+        raise SystemExit(f'{site_path}: no loudness for this MIDI yet: run node build/synth.mjs')
+    return round(max(0.0, min(20.0, TARGET_LUFS - row['lufs'])), 1)
+
+
+def presets(mid: Path) -> list[str]:
+    """The SoundFont files (build/synth.mjs) the MIDI plays: (bank, program) of every note, bank 128 on channel 10."""
+    have = {(e['bank'], e['program']): e['file'] for e in json.loads(SF_INDEX.read_text())}
+    need = set()
+    for tr in mido.MidiFile(mid).tracks:
+        prog, bank = {}, {}
+        for msg in tr:
+            if msg.type == 'program_change':
+                prog[msg.channel] = msg.program
+            elif msg.type == 'control_change' and msg.control == 0:
+                bank[msg.channel] = msg.value
+            elif msg.type == 'note_on' and msg.velocity:
+                ch = msg.channel
+                need.add((128, prog.get(ch, 0)) if ch == 9 else (bank.get(ch, 0), prog.get(ch, 0)))
+    files = []
+    for b, p in sorted(need):
+        f = have.get((b, p)) or have.get((128, 0) if b == 128 else (0, p))
+        if not f:
+            raise SystemExit(f'{mid.name}: no SoundFont file for bank {b} program {p}: run node build/synth.mjs')
+        files.append(f)
+    return sorted(set(files))
 
 
 def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> Built:
@@ -234,7 +273,7 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
     if cache.exists():
         shutil.rmtree(cache)
     cache.mkdir(parents=True)
-    for old in list(out.rglob('*.webp')) + list(out.rglob('*.svg')):   # page images of the old site
+    for old in list(out.rglob('*.webp')) + list(out.rglob('*.svg')) + list(out.rglob('*.m4a')):   # files of old sites
         old.unlink()
     from pages import kind
     subtitle = f"{kind(slug)} of {m['country']} · Music: {m['music']}"
@@ -255,7 +294,7 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
                          pdf=f'{title_slug}-{key}-sheet-music.pdf',
                          footer=f'Free download: anthem.adjiebrotots.com{url}')
 
-    # MIDI and recording of the whole arrangement (at the country folder, where they have always been)
+    # MIDI of the whole arrangement (at the country folder, where they have always been)
     gm = orch / 'work' / slug / 'guide.mid'
     if gm.exists():
         shutil.copy(gm, out / f'{title_slug}-melody.mid')
@@ -265,11 +304,9 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
     if arr.chorus_mid:
         shutil.copy(arr.chorus_mid, out / f'{title_slug}-orchestra-chorus.mid')
         b.chorus_mid = f'/{country}/{title_slug}-orchestra-chorus.mid'
-    b.tempo = tempo_map(arr.export_mid)
-    rec = out / f'{title_slug}-orchestra.m4a'
-    if rec.exists():
-        b.audio = f'/{country}/{rec.name}'
-        b.audio_seconds = audio_seconds(rec)
+    b.player = dict(midi=b.orchestra_mid, sf=presets(arr.export_mid), tempo=tempo_map(arr.export_mid),
+                    length=round(mido.MidiFile(arr.export_mid).length, 2),
+                    gain=gain_db(b.orchestra_mid, out / f'{title_slug}-orchestra.mid'))
 
     # melody (lead sheet with the words), /<country>/melody/
     xml = build_score(parts=[guide_spec(arr)], dynamics={}, multirest=True, header_part_name='Melody', **common)
@@ -295,6 +332,7 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
         if part.export_index is not None:
             write_part_midi(arr.export_mid, part.export_index, mid, part.track['name'])
             sf.mid = f'{url}{mid.name}'
+            sf.channel = synth_channel(arr.export_mid, part.export_index)
         page.parts.append(sf)
         fs = part_spec(arr, part, f'P{len(specs_full) + 1}', part.track['name'], written=False)
         specs_full.append((fs, dyn))

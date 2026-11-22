@@ -117,7 +117,7 @@ def check_site():
     n_pages = len([p for p in pages if 'name="robots" content="noindex' not in p.read_text()])
     if len(locs) != n_pages:
         errs.append(f'sitemap has {len(locs)} urls, site has {n_pages} pages')
-    # the score files each page draws (and each PDF button prints), the recordings the players play
+    # the score files each page draws (and each PDF button prints), the MIDI and SoundFont files the players play
     buttons, players = 0, 0
     for p in pages:
         h = p.read_text()
@@ -134,14 +134,19 @@ def check_site():
                 errs.append(f'{p.relative_to(DOCS)}: score without player data')
             else:
                 d = json.loads(m.group(1))
-                if d.get('audio'):
-                    players += 1
-                    if not (DOCS / d['audio'].lstrip('/')).exists():
-                        errs.append(f'{p.relative_to(DOCS)}: missing recording {d["audio"]}')
+                players += 1
+                for f in [d.get('midi', '')] + d.get('sf', []):
+                    if not f or not (DOCS / f.lstrip('/')).exists():
+                        errs.append(f'{p.relative_to(DOCS)}: player file missing: {f!r}')
+                if not d.get('sf'):
+                    errs.append(f'{p.relative_to(DOCS)}: player without SoundFont files')
                 if not d.get('tempo') or d['tempo'][0][:2] != [0, 0]:
                     errs.append(f'{p.relative_to(DOCS)}: tempo map does not start at beat 0')
     if list(DOCS.rglob('*.pdf')):
         errs.append('PDF files in docs/ (they are made in the browser)')
+    for f in (DOCS / 'assets' / 'js' / 'vendor' / 'spessasynth.js', DOCS / 'assets' / 'js' / 'vendor' / 'spessasynth_processor.min.js'):
+        if not f.exists():
+            errs.append(f'missing {f.relative_to(DOCS)} (node build/synth.mjs)')
     if list(DOCS.rglob('*.webp')):
         errs.append('page images (.webp) in docs/ (the score is drawn in the browser)')
     size = sum(f.stat().st_size for f in DOCS.rglob('*') if f.is_file())

@@ -2,7 +2,8 @@
 
 **Anthem Madness by adjiebrotot**: anthem.adjiebrotots.com, a static GitHub Pages site (folder `docs/`) with free
 sheet music and MIDI of national anthems in full orchestral arrangements. The score is drawn in the reader's browser
-by Verovio and plays along with a recording of the orchestra, the notes lighting up as they sound (like MuseScore).
+by Verovio and plays along with the orchestra MIDI in a SoundFont synth, the notes lighting up as they sound (like
+MuseScore).
 `/<country>/` is the full orchestra score, `/<country>/melody/` the lead sheet, `/<country>/<instrument>/` the parts.
 Every page is generated from an **adjiebrotot/anthem-orchestra** checkout by `build/`; never edit `docs/` pages by
 hand (rebuild instead). **At the end of every run, append new lessons to the log below.**
@@ -11,8 +12,8 @@ hand (rebuild instead). **At the end of every run, append new lessons to the log
 
 | Path | What |
 |---|---|
-| `build/build.py` | the build: per arrangement, MusicXML per part, converted to compact MEI (`*.mei.xml`, the file the page draws), A4 page counts for the PDF buttons, the export MIDI's tempo map, per-part MIDI, one share image, the HTML pages; then `sitefiles.py`. `--no-render` keeps the share images |
-| `build/audio.py` | the orchestra recording per anthem (`docs/<country>/<title>-orchestra.m4a`): renders song.json with anthem-orchestra's music-production skill, encodes 96 kbps AAC, deletes the render; skips anthems that have one (`--force`) |
+| `build/build.py` | the build: per arrangement, MusicXML per part, converted to compact MEI (`*.mei.xml`, the file the page draws), A4 page counts for the PDF buttons, the player's data (MIDI, its SoundFont files, tempo map, gain, each part's synth channel), per-part MIDI, one share image, the HTML pages; then `sitefiles.py`. `--no-render` keeps the share images |
+| `build/synth.mjs` + `build/package.json` | Node: splits the orchestra app's `Pawchestra.sf3` (adjiebrotot/orchestra `assets/soundfont/`) into `docs/assets/sf/<bank>/<program>.sf3` for the presets the MIDI files use (+ `index.json`), measures each orchestra MIDI's loudness as the synth plays it (`loudness.json`), bundles spessasynth_lib 4.4.5 + core 4.4.7 into `docs/assets/js/vendor/` |
 | `build/data.py` | reads one arrangement from anthem-orchestra (`work/<slug>/song.json`, `analysis.json`, `guide.json`, `lyrics-map.json`, `output/orchestra/<slug>.mid`, `work/youtube/anthems.py`, `DESCRIPTIONS.md`); staff abbreviations |
 | `build/engrave.py` | song.json notes to MusicXML: quantising (32nd and triplet grids), voices, ties, triplets, beams, rolls, let-ring, keys, dynamics, tempo and rehearsal marks |
 | `build/instruments.py` | which instrument page a part goes on, its clef and transposition, the percussion key map |
@@ -20,9 +21,9 @@ hand (rebuild instead). **At the end of every run, append new lessons to the log
 | `build/pages.py` | HTML of the country (full score), melody and instrument pages, the player bar, the `/full-score/` redirect (SEO head, JSON-LD, ad slots) |
 | `build/sitefiles.py` | home, 404, privacy redirect, sitemap (with share images), robots.txt, llms.txt, ads.txt, CNAME, .nojekyll |
 | `build/render.cjs` | Playwright Chromium: the share image (top of the full score's first A4 page) |
-| `build/check.py` | `notes`: every note of the shipped MEI vs the arrangement; `site`: links, JSON-LD, sitemap, score files, recordings, no PDF or WebP |
+| `build/check.py` | `notes`: every note of the shipped MEI vs the arrangement; `site`: links, JSON-LD, sitemap, score files, player files, no PDF or WebP |
 | `build/manifest.json` | what is on the site (one row per anthem); partial builds merge into it |
-| `docs/assets/` | design system copied from adjiebrotot/tool (fonts, dark/light tokens, theme.js, dropdown) + `site.css`, `site.js` (theme, menus, search, ads), `score.js` (viewer, player, PDF), the logo |
+| `docs/assets/` | design system copied from adjiebrotot/tool (fonts, dark/light tokens, theme.js, dropdown) + `site.css`, `site.js` (theme, menus, search, ads), `score.js` (viewer, player, PDF), `js/vendor/` (spessasynth), `sf/` (SoundFont per preset), the logo |
 
 ## Commands
 
@@ -30,7 +31,8 @@ hand (rebuild instead). **At the end of every run, append new lessons to the log
 python3 -m venv ~/.anthem-venv && ~/.anthem-venv/bin/pip install verovio==6.4.1 mido Pillow   # once
 PY=~/.anthem-venv/bin/python
 $PY build/check.py notes                         # every note of every arrangement (about 10 min, must say 0 mismatches)
-$PY build/audio.py                               # recordings that are missing (about 2 min each; set-up below)
+(cd build && npm install)                        # once: spessasynth + esbuild, pinned (Node 24)
+node build/synth.mjs --soundfont ../adjiebrotot/orchestra/assets/soundfont/Pawchestra.sf3   # new MIDI or SoundFont (about 3 s per new MIDI)
 $PY build/build.py --orchestra ../anthem-orchestra            # all anthems (about 8 min); --only <slug> ... for some
 $PY build/sitefiles.py                           # home, sitemap ... again (build.py runs it)
 $PY build/check.py site                          # must say "site ok"
@@ -39,17 +41,14 @@ $PY build/build.py --no-render                   # no Chromium: keeps the share 
 
 **How a page works** (`docs/assets/js/score.js`). Verovio's JS toolkit (jsDelivr, `verovio@6.4.1`, the version the
 Python build uses: keep the two equal) loads the page's MEI and lays it out for the screen width (zoom buttons, the
-words get more room on a phone). The player plays `<title>-orchestra.m4a`; `#amPlayer` holds the export MIDI's
-tempo map ([beat, second, bpm]), which turns the recording's time into beats, and Verovio's timemap gives every note's
-start and end in beats: notes sounding get the class `playing`, a band behind the notes follows them (it covers the
-measure while the part rests), the page scrolls with the music, a click on a note plays from there, speed 0.5 to 1.25.
-Instrument pages play the full orchestra and highlight their part.
-
-**The recording** is the music-production render of song.json, whose `composition.mid` is the exported MIDI note for
-note, so the sync holds. Set-up, once per machine, in anthem-orchestra: `bash scripts/music-setup.sh orchestra` and
-the `vcsl_world` bank (`fetch_soundbanks.py --only vcsl_world`, see `build/audio.py`). A changed arrangement needs
-`audio.py --force --only <slug>`. Test seeking with a server that answers Range requests (GitHub Pages does;
-`python3 -m http.server` does not, and the audio then always restarts at 0:00).
+words get more room on a phone). Play loads spessasynth (an AudioWorklet SoundFont synth, the core the orchestra app
+runs) with only the presets the page's orchestra MIDI uses, then plays that MIDI through the anthem's gain (to -16
+LUFS, as the app does) and a limiter. `#amPlayer` holds the MIDI's tempo map ([beat, second, bpm]), which turns the
+sequencer's time into beats, and Verovio's timemap gives every note's start and end in beats: notes sounding get the
+class `playing`, a band behind the notes follows them (it covers the measure while the part rests), the page scrolls
+with the music, a click on a note plays from there, speed 0.5 to 1.25. Instrument pages highlight their part and
+offer the full orchestra, the part alone or the orchestra without it (channel mute; a part's channel is port * 16 +
+channel, spessasynth's multi-port numbering).
 
 **PDFs are not stored.** A PDF button (`data-pdf`, `data-src`, `data-full`, `data-print`, `data-footer`) draws the
 score again with Verovio at A4 (`print_options()` in build.py = `printOptions()` in score.js, plus the button's
@@ -57,17 +56,16 @@ score again with Verovio at A4 (`print_options()` in build.py = `printOptions()`
 sets the document title to the file name and calls `window.print()` (a one-time tip says to pick "Save as PDF").
 Vector pages, nothing over the notes.
 
-Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`; ffprobe reads the recording length.
-Local preview: any static server on `docs/` that answers Range requests; off the live domain the ad slots show as
-labelled boxes. In headless tests route `cdn.jsdelivr.net` to a local copy of the toolkit (`npm pack verovio@6.4.1`).
+Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. Local preview:
+`python3 -m http.server -d docs 8765`; off the live domain the ad slots show as labelled boxes. In headless tests route `cdn.jsdelivr.net` to a local copy of the toolkit (`npm pack verovio@6.4.1`).
 
 ## A new arrangement in anthem-orchestra
 
 1. It needs `work/<slug>/song.json`, `analysis.json`, `guide.json` and an entry in `work/youtube/anthems.py`
    (country, title, native, music, words, adopted, language, about, orch, region) and a DESCRIPTIONS.md row.
 2. Add its language to `LANG_OF` in `build/i18n.py` (and a `WORDS` table if the language is new).
-3. `$PY build/check.py notes --only <slug>`, `$PY build/audio.py --only <slug>`, `$PY build/build.py --only <slug>`,
-   then `check.py site`.
+3. `$PY build/check.py notes --only <slug>`, `$PY build/build.py --only <slug>` (it asks for `node build/synth.mjs`
+   when the MIDI is new: its loudness, or an instrument with no SoundFont file yet), then `check.py site`.
 4. Open a few pages in a browser: beams, rolls, harp, percussion; press play and click a note.
 
 ## Rules
@@ -97,12 +95,15 @@ Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
   signature: `pitched_key_changes()` rewrites it as staffDefs of the pitched staves. A full score's first page (every
   staff) was taller than A4 at scale 28 (the bottom staves fell off the page and under the footer): `a4_pages()`
   closes up `spacingStaff` until every page fits and passes it to the PDF button (`data-print`).
-- 2026-11-22: Audio: the music-production render of song.json takes about 100 s and 2 to 5 GB per anthem, and the
-  skill keeps a cache BESIDE the output folder (`renders/cache`): the first batch filled a 60 GB disk after 18 anthems.
-  `audio.py` renders into `build/.cache/render/<slug>/` and deletes all of it (never anthem-orchestra's own
-  `work/<slug>/renders`, which holds the user's renders); its notes equal the export MIDI's exactly and it starts at beat 0, so the export's tempo map (with its
-  rubato ramps) syncs recording and score. 101 minutes of music at 96 kbps AAC = about 75 MB, the size of the WebP
-  pages it replaced. Arrangements use the `vcsl_world` bank too (not in `music-setup.sh orchestra`).
+- 2026-11-22: Sound: play the MIDI in the browser, not a rendered recording (the user's call: rendering 53 anthems
+  with the music skill took 2 min and 2-5 GB of cache each and filled the disk; 75 MB of audio to store). spessasynth
+  with the orchestra app's SoundFont split per preset: 20 presets, 13 MB, a page loads its own (5-9 MB) on the first
+  play and the browser caches them across anthems. The export MIDI starts at beat 0 and its tempo map (rubato ramps
+  included) syncs sequencer and score. Raw synth output is quiet (-27 to -32 LUFS): synth.mjs renders each MIDI in
+  Node with spessasynth_core and BS.1770-measures it; the page gains it to -16 LUFS into a limiter.
+- 2026-11-22: spessasynth reports a new channel's settings before the channel (the second MIDI port, parts 17+):
+  score.js skips reports for channels the page does not have yet, else every one throws. A part on port 1 is synth
+  channel 16 + its channel. When testing a part's level, measure over several seconds: long notes leave gaps.
 - 2026-11-22: Clicks rarely hit a note's glyphs (the SVG between head and stem is transparent): the player picks the
   nearest notehead within 30 px. The cursor is a band BEHIND the notes (the SVG has no background), so the red notes
   stay visible. Lyrics at phone width collided until `lyricSize` 3.6 and `spacingLinear` 0.35.

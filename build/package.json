@@ -1,0 +1,11 @@
+{
+  "name": "anthem-madness-build",
+  "private": true,
+  "description": "Node side of the build: the browser synth (spessasynth) and the SoundFont split (build/synth.mjs)",
+  "type": "module",
+  "devDependencies": {
+    "esbuild": "0.25.11",
+    "spessasynth_core": "4.4.7",
+    "spessasynth_lib": "4.4.5"
+  }
+}

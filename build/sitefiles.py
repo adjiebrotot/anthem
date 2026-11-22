@@ -207,7 +207,7 @@ def llms(man: dict) -> str:
              'Access: free, no account. PDFs are made in the browser and carry a faint anthem.adjiebrotots.com watermark.', '',
              '## How the site is laid out', '',
              f'- {SITE}/<country>/ : the anthem: the full orchestra score in concert pitch, drawn in the browser and played '
-             'along with a recording of the orchestra (the notes light up as they sound); full orchestra MIDI, chorus MIDI, '
+             'along with the orchestra MIDI in a SoundFont synth (the notes light up as they sound); full orchestra MIDI, chorus MIDI, '
              'melody MIDI, full-score PDF, facts (composer, lyricist, adoption, key, tempo, length).',
              f'- {SITE}/<country>/melody/ : the melody as a lead sheet (with lyrics where sung), PDF and MIDI.',
              f'- {SITE}/<country>/<instrument>/ : that instrument\'s parts as sheet music, a PDF and a MIDI per part. '
