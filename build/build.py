@@ -41,9 +41,9 @@ class ScoreFile:
     key: str                 # violin-1, melody, full-score
     label: str               # "Violins I", "Melody", "Full score"
     pages: list = field(default_factory=list)      # site paths of the page images
-    pdf: str = ''            # site path
+    pdf: str = ''            # file name the browser saves the PDF as (made on click from the page images)
+    footer: str = ''         # the PDF's footer line
     mid: str = ''            # site path
-    pdf_bytes: int = 0
     transpose_name: str = ''
 
 
@@ -143,9 +143,9 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
             svg_paths.append(str(p))
             pngs.append(str(cache / f'{key}-{i}.png'))
             sf.pages.append(f'{url}img/{key}-{i}.webp')
-        pdf = folder / f'{title_slug}-{key}-sheet-music.pdf'
-        sf.pdf = f'{url}{pdf.name}'
-        jobs.append(dict(svgs=svg_paths, png=pngs, pdf=str(pdf), footer=footer,
+        sf.pdf = f'{title_slug}-{key}-sheet-music.pdf'
+        sf.footer = footer
+        jobs.append(dict(svgs=svg_paths, png=pngs,
                          webp=[str(folder / 'img' / f'{key}-{i}.webp') for i in range(1, len(svgs) + 1)]))
         b.pages_total += len(svgs)
         return sf
@@ -204,8 +204,13 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
     return b
 
 
-def finish_jobs(jobs: list):
+def finish_jobs(jobs: list, render: bool = True):
     if not jobs:
+        return
+    if not render:  # pages only: the page images must already be there
+        missing = [w for job in jobs for w in job['webp'] if not Path(w).exists()]
+        if missing:
+            raise SystemExit(f'--no-render but {len(missing)} page images are missing, e.g. {missing[0]}')
         return
     jf = CACHE / 'jobs.json'
     jf.write_text(json.dumps(jobs))
@@ -222,7 +227,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--orchestra', default=str(ROOT.parent / 'anthem-orchestra'))
     ap.add_argument('--only', nargs='*')
-    ap.add_argument('--pages-only', action='store_true', help='rewrite HTML from build/.cache/built.json')
+    ap.add_argument('--no-render', action='store_true',
+                    help='rewrite the pages only, keeping the page images (Verovio still counts the pages)')
     a = ap.parse_args()
     orch = Path(a.orchestra)
     anthems = load_anthems(orch)
@@ -236,12 +242,7 @@ def main():
         jobs: list = []
         print('building', slug, flush=True)
         b = build_one(orch, slug, anthems, descs, jobs)
-        finish_jobs(jobs)
-        for g in b.insts:
-            for sf in g.parts:
-                sf.pdf_bytes = (DOCS / sf.pdf.lstrip('/')).stat().st_size
-        for sf in (b.melody, b.full):
-            sf.pdf_bytes = (DOCS / sf.pdf.lstrip('/')).stat().st_size
+        finish_jobs(jobs, render=not a.no_render)
         built.append(b)
     all_built = pages.registry(built, anthems, orch, slugs_all=[s for s in anthems if s not in SKIP])
     pages.write_all(built, all_built)
