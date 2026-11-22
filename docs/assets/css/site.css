@@ -241,3 +241,10 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
   .pdf-page:last-child { page-break-after: auto; break-after: auto; }
   .pdf-page, .pdf-page * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* country flags (SVG files, not emoji: Windows draws flag emoji as two letters) */
+.flag { display: inline-block; width: 1.33em; height: 1em; margin-right: .4em; vertical-align: -.12em; object-fit: cover;
+  border-radius: 2px; box-shadow: 0 0 0 1px var(--border); }
+.an-country .flag { width: 22px; height: 16.5px; vertical-align: -2px; }
+.page-title h1 .flag { width: 1.1em; height: .825em; margin-right: .25em; vertical-align: -.05em; }
+.nowrap { white-space: nowrap; }

@@ -23,7 +23,7 @@ hand (rebuild instead). **At the end of every run, append new lessons to the log
 | `build/render.cjs` | Playwright Chromium: the share image (top of the full score's first A4 page) |
 | `build/check.py` | `notes`: every note of the shipped MEI vs the arrangement; `site`: links, JSON-LD, sitemap, score files, player files, no PDF or WebP |
 | `build/manifest.json` | what is on the site (one row per anthem); partial builds merge into it |
-| `docs/assets/` | design system copied from adjiebrotot/tool (fonts, dark/light tokens, theme.js, dropdown) + `site.css`, `site.js` (theme, menus, search, ads), `score.js` (viewer, player, PDF), `js/vendor/` (spessasynth), `sf/` (SoundFont per preset), the logo |
+| `docs/assets/` | design system copied from adjiebrotot/tool (fonts, dark/light tokens, theme.js, dropdown) + `site.css`, `site.js` (theme, menus, search, ads), `img/flags/` (one SVG flag per country, from the flag-icons npm package, MIT; `FLAGS` in pages.py maps a country slug to its file), `score.js` (viewer, player, PDF), `js/vendor/` (spessasynth), `sf/` (SoundFont per preset), the logo |
 
 ## Commands
 
@@ -85,6 +85,13 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 ## Lessons Learned log
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
+
+- 2026-11-22: Flags beside country names (home and "more anthems" cards, the country page title, the melody and
+  instrument leads) are SVG files, never emoji (Windows draws flag emoji as two letters). Wikimedia answers 429 to
+  this container, so they come from the flag-icons npm package (`npm pack flag-icons@7.5.0`, `flags/4x3/`: drawn
+  from the Wikipedia SVGs, and it has ASEAN and EU). A new country needs a `FLAGS` row and its file (`check.py site`
+  fails without). A rebuild rewrites every `.mei.xml` with new random Verovio ids only: `git checkout -- '*.mei.xml'`
+  when the notes did not change.
 
 - 2026-11-22: The score moved from WebP page images (a watermark across the notes, no way to follow playback) to
   Verovio in the browser: the build ships compact MEI (`getMEI({removeIds})` + whitespace closed up: the full score
