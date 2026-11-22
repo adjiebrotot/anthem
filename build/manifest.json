@@ -1,0 +1,36 @@
+{
+ "argentina-anthem": {
+  "country": "Argentina",
+  "country_slug": "argentina",
+  "english": "Argentine National Anthem",
+  "image": "/argentina/img/melody-1.webp",
+  "insts": [
+   "piccolo",
+   "flute",
+   "oboe",
+   "clarinet",
+   "bassoon",
+   "horn",
+   "trumpet",
+   "trombone",
+   "tuba",
+   "timpani",
+   "percussion",
+   "harp",
+   "choir",
+   "violin",
+   "viola",
+   "cello",
+   "double-bass"
+  ],
+  "key_meter": "Bb major, 4/4",
+  "length": "2:44",
+  "native": [
+   "Himno Nacional Argentino"
+  ],
+  "parts": 21,
+  "region": "americas",
+  "title": "Himno Nacional Argentino",
+  "updated": "2026-11-22"
+ }
+}
