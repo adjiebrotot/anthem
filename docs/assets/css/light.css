@@ -1,0 +1,43 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Shared Design System — LIGHT theme tokens (day)
+   The Adjie family palette by day: navy ink on a sky ground, the www
+   homepage's blues (#0052CC brand, #3A71C8 for fills and links, #5A91E8 only
+   for large marks), gold and teal. Text colours pass WCAG AA on a panel.
+   Included by all tools via <link rel="stylesheet" href="../light.css">
+   Applied when <body> has class="light"
+   ────────────────────────────────────────────────────────────────────────── */
+body.light {
+  --bg:#F0F4FF;--panel:#FFFFFF;--panel-raised:#FFFFFF;--text:#14203A;--muted:#4C5B76;--border:#DCE3F0;
+  --accent:#3A71C8;--accent-strong:#0052CC;--accent2:#1F7F63;--accent3:#E66A6A;--gold:#B45309;
+  --brand:#0052CC;--ink-line:#14203A;
+  --input-bg:rgba(20,32,58,0.045);--card-bg:rgba(255,255,255,0.85);--bg-subtle:#F8FBFF;--text-inv:#FFFFFF;
+  --shadow:none;
+  --shadow-sm:none;
+  --shadow-lg:0 10px 30px rgba(20,32,58,0.16);
+  /* Redeclared, not inherited: a var() inside a token resolves where it is set. */
+  --sticker:2px 2px 0 var(--ink-line);
+  --sticker-hover:3px 3px 0 var(--ink-line);
+  /* A filled blue button needs an offset that differs from its own fill. */
+  --sticker-accent:2px 2px 0 #14203A;--sticker-accent-hover:3px 3px 0 #14203A;
+  /* Directional data colours */
+  --positive:#0052CC;--positive-em:#0052CC;--negative:#E63939;--negative-em:#C6382F;
+  --positive-bg:#EAF2FF;--negative-bg:#FDECEC;
+  --positive-border:#8FB5FF;--negative-border:#F3A5A5;
+  /* Aliases for legacy data-pos/data-neg naming */
+  --data-pos:var(--positive);--data-pos-em:var(--positive-em);--data-pos-bg:var(--positive-bg);--data-pos-border:var(--positive-border);
+  --data-neg:var(--negative);--data-neg-em:var(--negative-em);--data-neg-bg:var(--negative-bg);--data-neg-border:var(--negative-border);
+  /* Status/feedback colours */
+  --success-bg:#C8F7C5;--success-text:#1A4A18;
+  --error-bg:#FFB3BA;--error-text:#4A1018;
+  --warning-bg:#FFF0D9;--warning-text:#7A4A00;
+  --info-bg:#EAF2FF;--info-text:#174A9C;--info-border:#8FB5FF;
+  /* Chart tokens (light) — dedicated per spec, NOT text.secondary */
+  --chart-text:#4C5B76;--chart-grid:#C8D4E8;
+  /* Abbreviations (dashed underline + hover definition, see shared.css/.abbr) */
+  --abbr-line:rgba(110,124,142,.50);--abbr-line-hover:rgba(58,113,200,.85);--abbr-hover-bg:rgba(90,145,232,.09);
+  /* Scrollbars (see shared.css): both bars wear these colours site-wide */
+  --scrollbar-thumb:#C3D0E6;--scrollbar-thumb-hover:#9AB2D8;
+  /* Chart line colours */
+  --line-a:#5A91E8;--line-b:#E63939;--line-c:#4A9E87;--line-d:#C46A7E;--line-e:#9B59B6;
+  --line-rtb-rent:#B45309;--line-rtb-own:#5A91E8;
+}
