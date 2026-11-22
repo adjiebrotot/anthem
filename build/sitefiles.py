@@ -15,7 +15,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from pages import (kind, BRAND, DOCS, MANIFEST, PERSON, PUB, REGION_NAMES, SITE, SLOT_MULTI1, SLOT_MULTI2, SLOT_TOP, TODAY,  # noqa: E402
-                   ad, country_title, e, faq_block, faq_ld, footer, head, header)
+                   ad, country_title, e, flag, faq_block, faq_ld, footer, head, header)
 
 REGION_ORDER = ['asia', 'europe', 'americas', 'middle-east', 'africa', 'oceania']
 
@@ -38,7 +38,7 @@ def home(man: dict) -> str:
             search = ' '.join([v['country'], v['title'], nat, v.get('english') or '']).lower()
             cards.append(
                 f'<a class="an-card" href="/{v["country_slug"]}/" data-search="{e(search)}">'
-                f'<span class="an-country">{e(country_title(v["country"]))}</span>'
+                f'<span class="an-country">{flag(v["country_slug"])}{e(country_title(v["country"]))}</span>'
                 f'<span class="an-title">{e(v["title"])}</span>'
                 + (f'<span class="an-nat" lang="und">{e(nat)}</span>' if nat else '')
                 + f'<span class="an-meta">{len(v["insts"])} instruments · {v["parts"]} parts · {e(v.get("length", ""))}</span></a>')

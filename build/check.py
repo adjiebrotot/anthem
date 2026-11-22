@@ -142,6 +142,11 @@ def check_site():
                     errs.append(f'{p.relative_to(DOCS)}: player without SoundFont files')
                 if not d.get('tempo') or d['tempo'][0][:2] != [0, 0]:
                     errs.append(f'{p.relative_to(DOCS)}: tempo map does not start at beat 0')
+    import pages as pg  # every anthem's country has a flag file
+    for v in json.loads((HERE / 'manifest.json').read_text()).values():
+        code = pg.FLAGS.get(v['country_slug'])
+        if not code or not (DOCS / 'assets' / 'img' / 'flags' / f'{code}.svg').exists():
+            errs.append(f'no flag for {v["country_slug"]} (FLAGS in build/pages.py, docs/assets/img/flags/)')
     if list(DOCS.rglob('*.pdf')):
         errs.append('PDF files in docs/ (they are made in the browser)')
     for f in (DOCS / 'assets' / 'js' / 'vendor' / 'spessasynth.js', DOCS / 'assets' / 'js' / 'vendor' / 'spessasynth_processor.min.js'):

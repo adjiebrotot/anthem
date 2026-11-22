@@ -48,6 +48,30 @@ def country_title(c: str) -> str:
     return c[4:] if c.lower().startswith('the ') else c
 
 
+# flag file (docs/assets/img/flags/<code>.svg, from the flag-icons package, MIT) per country slug. An SVG, not an
+# emoji: Windows draws flag emoji as two letters.
+FLAGS = {
+    'argentina': 'ar', 'asean': 'asean', 'australia': 'au', 'bahrain': 'bh', 'belgium': 'be', 'brazil': 'br',
+    'brunei': 'bn', 'cambodia': 'kh', 'canada': 'ca', 'china': 'cn', 'colombia': 'co', 'denmark': 'dk',
+    'european-union': 'eu', 'finland': 'fi', 'france': 'fr', 'germany': 'de', 'greece': 'gr', 'india': 'in',
+    'iran': 'ir', 'ireland': 'ie', 'italy': 'it', 'japan': 'jp', 'laos': 'la', 'malaysia': 'my', 'mexico': 'mx',
+    'mongolia': 'mn', 'netherlands': 'nl', 'new-zealand': 'nz', 'north-korea': 'kp', 'norway': 'no', 'peru': 'pe',
+    'philippines': 'ph', 'poland': 'pl', 'portugal': 'pt', 'qatar': 'qa', 'romania': 'ro', 'saudi-arabia': 'sa',
+    'singapore': 'sg', 'south-africa': 'za', 'south-korea': 'kr', 'spain': 'es', 'sweden': 'se',
+    'switzerland': 'ch', 'taiwan': 'tw', 'thailand': 'th', 'turkiye': 'tr', 'uae': 'ae', 'ukraine': 'ua',
+    'united-kingdom': 'gb', 'united-states': 'us', 'vatican-city': 'va', 'venezuela': 've', 'vietnam': 'vn',
+}
+
+
+def flag(country_slug: str) -> str:
+    """The country's flag as a small image (decorative: the name sits beside it), '' if there is none."""
+    code = FLAGS.get(country_slug)
+    if not code:
+        return ''
+    return (f'<img class="flag" src="/assets/img/flags/{code}.svg" alt="" width="24" height="18" '
+            f'loading="lazy" decoding="async">')
+
+
 ORGS = {'asean-anthem', 'european-union-anthem'}   # anthems of a union of nations, not of a nation
 
 
@@ -200,6 +224,7 @@ class Ctx:
         self.man = man
         self.country = self.m['country']
         self.ct = country_title(self.country)
+        self.flag = flag(b.country)
         self.title = self.m['title']
         self.base = f'/{b.country}/'
         d = b.arr.desc
@@ -411,7 +436,7 @@ def more_anthems(c: Ctx) -> str:
     pick = (same + other)[:8]
     if not pick:
         return ''
-    cards = ''.join(f'<a class="an-card" href="/{v["country_slug"]}/"><span class="an-country">{e(country_title(v["country"]))}</span>'
+    cards = ''.join(f'<a class="an-card" href="/{v["country_slug"]}/"><span class="an-country">{flag(v["country_slug"])}{e(country_title(v["country"]))}</span>'
                     f'<span class="an-title">{e(v["title"])}</span></a>' for v in pick)
     return f'<section class="more-anthems" aria-labelledby="moreTitle"><h2 id="moreTitle">More national anthems</h2><div class="an-grid">{cards}</div></section>'
 
@@ -479,7 +504,7 @@ def inst_page(c: Ctx, g) -> str:
             f'orchestral arrangement: {", ".join(p.label for p in parts)}. Read it along with the orchestra, then '
             f'download the PDF or MIDI.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: {e(name)} Sheet Music'
-    lead_bits = [f'{c.Kind} of {e(c.ct)}']
+    lead_bits = [f'{c.Kind} of {c.flag}{e(c.ct)}']
     if c.native and c.native[0] != c.title:
         lead_bits.append(f'<span lang="und">{e(c.native[0])}</span>')
     if nat:
@@ -513,7 +538,7 @@ def country_page(c: Ctx) -> str:
             f'then download the sheet music of every instrument ({len(c.arr.parts)} parts), the melody'
             + (' with lyrics' if c.arr.lyrics else '') + ' and the MIDI, free.'
             + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
-    h1 = f'{e(c.title)}: {c.Kind} of {e(c.ct)}'
+    h1 = f'{e(c.title)}: {c.Kind} of <span class="nowrap">{c.flag}{e(c.ct)}</span>'
     bits = []
     if c.m.get('english'):
         bits.append(e(c.m['english']))
@@ -554,7 +579,7 @@ def melody_page(c: Ctx) -> str:
     desc = (f'The melody of {c.title}, {c.kind} of {c.country}, as a lead sheet{words}: read it as the orchestra '
             f'plays, then download the PDF and the MIDI, free.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: Melody{" and Lyrics" if c.arr.lyrics else ""}'
-    lead = f'{c.Kind} of {e(c.ct)} · lead sheet{words}' + (f' · {e(nat)}' if nat else '')
+    lead = f'{c.Kind} of {c.flag}{e(c.ct)} · lead sheet{words}' + (f' · {e(nat)}' if nat else '')
     play = ' Press play to hear it with the full orchestra and follow the tune as it lights up.'
     lead_sentence = (f'<p class="geo">The official melody of {e(c.title)}, note for note, on one staff'
                      + (' with the words under the notes' if c.arr.lyrics else '') + f'.{play}</p>')
