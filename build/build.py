@@ -44,8 +44,8 @@ VEROVIO = verovio.toolkit().getVersion().split('-')[0]   # score.js loads this v
 def print_options(full: bool) -> dict:
     """A4 pages for the PDF (10 units per mm); score.js PRINT uses the same, so the page counts on the buttons hold."""
     o = {'pageWidth': 2100, 'pageHeight': 2970, 'scale': 28 if full else 40, 'font': 'Leland', 'footer': 'none',
-         'header': 'auto', 'adjustPageHeight': False, 'svgViewBox': True, 'svgRemoveXlink': True,
-         'pageMarginTop': 80, 'pageMarginBottom': 110, 'pageMarginLeft': 90, 'pageMarginRight': 90,
+         'header': 'auto', 'adjustPageHeight': True, 'svgViewBox': True, 'svgRemoveXlink': True,
+         'pageMarginTop': 80, 'pageMarginBottom': 140, 'pageMarginLeft': 90, 'pageMarginRight': 90,
          'spacingSystem': 14 if full else 10}
     if full:
         o.update({'condense': 'auto', 'condenseFirstPage': False})
@@ -155,7 +155,10 @@ def pitched_key_changes(mei: str) -> str:
 def a4_pages(mei: str, full: bool) -> tuple[int, str, dict]:
     """Number of A4 pages, the first page's SVG and the print options that differ from print_options().
     A full score's system (every staff on the first page) can be taller than A4: the staves close up until every
-    page fits, and only if even that fails are empty staves hidden on the first page too."""
+    page fits, and only if even that fails are empty staves hidden on the first page too. A page fits when its
+    content and both margins are within A4 (adjustPageHeight: the SVG is as tall as what is on it); the bottom
+    margin keeps the PDF footer clear of the notes. Verovio's breaks can still overfill a page: score.js then scales
+    that page down to fit."""
     tk = verovio.toolkit()
     if not tk.loadData(mei):
         raise RuntimeError('verovio could not read its own MEI')
@@ -165,18 +168,13 @@ def a4_pages(mei: str, full: bool) -> tuple[int, str, dict]:
     for extra in tries:
         o = print_options(full)
         o.update(extra)
-        o['adjustPageHeight'] = True
         tk.setOptions(o)
         tk.redoLayout()
-        limit = (o['pageHeight'] + o['pageMarginBottom']) * o['scale'] / 100 + 1
+        limit = o['pageHeight'] * o['scale'] / 100 + 1
         heights = [float(re.search(r'viewBox="0 0 [\d.]+ ([\d.]+)"', tk.renderToSVG(i)).group(1))
                    for i in range(1, tk.getPageCount() + 1)]
         if max(heights) <= limit:
             break
-    o = print_options(full)
-    o.update(extra)
-    tk.setOptions(o)
-    tk.redoLayout()
     return tk.getPageCount(), tk.renderToSVG(1), extra
 
 

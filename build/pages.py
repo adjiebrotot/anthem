@@ -12,7 +12,9 @@ import json
 from pathlib import Path
 
 from i18n import LANG_OF, native_phrase, words
-from rights import CR, licence, rights
+import random
+
+from rights import CR, composer, licence, lyricist, rights
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / 'docs'
@@ -26,15 +28,21 @@ PERSON = 'https://www.adjiebrotots.com/#person'
 
 SLOT_TOP = '4716600974'        # Display 1: banner under the title
 SLOT_BETWEEN = '4447514374'    # Display 2: under the score
-SLOT_MULTI1 = '9720022354'     # Multiplex 1
+SLOT_MULTI1 = '9720022354'     # Multiplex 1 (home page only)
 SLOT_MULTI2 = '4659267360'     # Multiplex 2
-SLOT_ARTICLE = '1433722275'    # In-article
+SLOT_ARTICLE = '1433722275'    # In-article (not placed: no ads between the about sections and the FAQ)
 SLOT_SIDE = '3134432708'       # Display 4: sticky sidebar
 
 REGION_NAMES = {'asia': 'Asia', 'europe': 'Europe', 'americas': 'The Americas', 'middle-east': 'Middle East',
                 'africa': 'Africa', 'oceania': 'Oceania'}
 
 e = html.escape
+
+
+def v(asset: str) -> str:
+    """asset path + ?v=<hash of its content>: a changed stylesheet or script reaches readers at once."""
+    import hashlib
+    return f'{asset}?v={hashlib.md5((DOCS / asset.lstrip("/")).read_bytes()).hexdigest()[:8]}'
 
 
 def kb(n: int) -> str:
@@ -136,7 +144,7 @@ def head(*, title: str, desc: str, url: str, image: str, jsonld: dict, keywords:
 <link rel="stylesheet" href="/assets/css/dark.css"/>
 <link rel="stylesheet" href="/assets/css/light.css"/>
 <link rel="stylesheet" href="/assets/css/dropdown.css"/>
-<link rel="stylesheet" href="/assets/css/site.css"/>
+<link rel="stylesheet" href="{v('/assets/css/site.css')}"/>
 <script async src="https://www.googletagmanager.com/gtag/js?id={GA}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -165,7 +173,7 @@ def header() -> str:
     </a>
     <nav class="family-nav" aria-label="Site">
       <a href="/">Home</a>
-      <a href="https://www.adjiebrotots.com/">About me</a>
+      <a href="https://www.adjiebrotots.com/">About</a>
       <button class="family-theme" id="themeToggle" type="button" aria-label="Switch theme"></button>
     </nav>
   </div>
@@ -181,8 +189,8 @@ def footer() -> str:
   <div class="footer-made"><img src="/assets/img/indonesian.png" alt="" width="36" height="36"/><span>Made in Australia by <a href="https://www.adjiebrotots.com/" rel="author">Adjie Brotosukmono</a>, an Indonesian engineer.</span></div>
 </section></footer>
 <script src="/assets/js/dropdown.js"></script>
-<script src="/assets/js/site.js"></script>
-<script src="/assets/js/score.js"></script>
+<script src="{v('/assets/js/site.js')}"></script>
+<script src="{v('/assets/js/score.js')}"></script>
 </body>
 </html>
 '''
@@ -204,15 +212,25 @@ def crumbs_ld(items: list[tuple[str, str]]) -> dict:
 
 
 def faq_block(qas: list[tuple[str, str]]) -> str:
-    items = ''.join(f'<div class="faq-item"><h3>{e(q)}</h3><p>{a}</p></div>' for q, a in qas)
+    items = ''.join(f'<div class="faq-item"{f' id="{i}"' if i else ''}><h3>{e(q)}</h3>'
+                    f'{a if a.startswith("<p>") else f"<p>{a}</p>"}</div>' for q, a, i in map(_qa3, qas))
     return f'<section class="card faq-card" aria-labelledby="faqTitle"><h2 id="faqTitle">Questions</h2><div class="faq-list">{items}</div></section>'
+
+
+def _qa3(qa):
+    """(question, answer) or (question, answer, element id)."""
+    return qa if len(qa) == 3 else (*qa, '')
 
 
 def faq_ld(qas) -> dict:
     import re
+
+    def text(a):
+        a = re.sub(r'</(p|blockquote)>|<br/?>', ' ', a)
+        return html.unescape(re.sub(r'\s+', ' ', re.sub('<[^>]+>', '', a))).strip()
     return {'@type': 'FAQPage', 'mainEntity': [
-        {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': re.sub('<[^>]+>', '', a)}}
-        for q, a in qas]}
+        {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': text(a)}}
+        for q, a, _ in map(_qa3, qas)]}
 
 
 # ------------------------------------------------------------------------------------------------ anthem pages
@@ -427,18 +445,16 @@ def about_sections(c: Ctx) -> str:
     m = c.m
     return f'''<section class="card prose" aria-labelledby="aboutTitle"><h2 id="aboutTitle">About {e(c.title)}</h2>
 <p>{e(m['about'])}</p></section>
-{ad(SLOT_ARTICLE, fmt='fluid', extra=' data-ad-layout="in-article" style="display:block;text-align:center"')}
 <section class="card prose" aria-labelledby="arrTitle"><h2 id="arrTitle">About this orchestral arrangement</h2>
 <p>{e(m['orch'])}</p>
 <p>The melody is the official tune, note for note; only the orchestration is new. {e(c.key_meter)}{', ' + e(c.length) if c.length else ''}, {len(c.arr.parts)} parts.</p></section>'''
 
 
-def more_anthems(c: Ctx) -> str:
-    same = [v for k, v in sorted(c.man.items(), key=lambda kv: kv[1]['country_slug'])
-            if k != c.arr.slug and v['region'] == c.m['region']]
-    other = [v for k, v in sorted(c.man.items(), key=lambda kv: kv[1]['country_slug'])
-             if k != c.arr.slug and v['region'] != c.m['region']]
-    pick = (same + other)[:8]
+def more_anthems(c: Ctx, seed: str) -> str:
+    """Eight other anthems of the site, picked at random per page (seeded by its URL, so a rebuild keeps the pick
+    while the site has the same anthems)."""
+    others = sorted((k for k in c.man if k != c.arr.slug))
+    pick = [c.man[k] for k in random.Random(f'{seed}|{",".join(others)}').sample(others, min(8, len(others)))]
     if not pick:
         return ''
     cards = ''.join(f'<a class="an-card" href="/{v["country_slug"]}/"><span class="an-country">{flag(v["country_slug"])}{e(country_title(v["country"]))}</span>'
@@ -448,6 +464,7 @@ def more_anthems(c: Ctx) -> str:
 
 def layout(c: Ctx, *, h1: str, lead: str, crumbs_items, viewer: str, side_dl: str, current: str,
            faq: list) -> str:
+    seed = crumbs_items[-1][1]          # the page's URL: each page shows its own random pick of other anthems
     return f'''<main class="container">
 {crumbs(crumbs_items)}
 <div class="page-title">
@@ -462,16 +479,15 @@ def layout(c: Ctx, *, h1: str, lead: str, crumbs_items, viewer: str, side_dl: st
 </div>
 {inst_grid(c, current)}
 {about_sections(c)}
-{ad(SLOT_MULTI1, fmt='autorelaxed', cls='ad-multi')}
 {faq_block(faq)}
-{more_anthems(c)}
+{more_anthems(c, seed)}
 {ad(SLOT_MULTI2, fmt='autorelaxed', cls='ad-multi')}
 </main>
 '''
 
 
-def credit(c: Ctx) -> str:
-    return f'"{e(c.title)}", arranged for orchestra by adjiebrotot (anthem.adjiebrotots.com)'
+ARR_YEAR = 2026     # the year the arrangements were made (the copyright line of the sample credit)
+CC0 = 'https://creativecommons.org/publicdomain/zero/1.0/'
 
 
 def lic_link(c: Ctx) -> str:
@@ -479,24 +495,48 @@ def lic_link(c: Ctx) -> str:
 
 
 def licence_note(c: Ctx) -> str:
-    """The line under the download buttons."""
+    """The line under the download buttons; the sample credit is in the FAQ (#credit)."""
+    cr = '<a href="#credit">credit adjiebrotot</a>'
     if c.status == CR:
-        return (f'The melody belongs to {e(c.owner)}: fine for meetings, education, ceremonies and community events, '
-                f'commercial use needs their licence. The arrangement asks only for credit ({lic_link(c)}).')
-    return f'The melody is in the public domain; this arrangement is {lic_link(c)}: credit adjiebrotot and share alike.'
+        return f'The melody belongs to {e(c.owner)}; this arrangement is {lic_link(c)}: {cr}.'
+    return f'The melody is in the public domain; this arrangement is {lic_link(c)}: {cr} and share alike.'
+
+
+def sample_credits(c: Ctx) -> str:
+    """Two ready-made attributions: a one-line simple one and a standard one."""
+    t = e(c.title)
+    url = SITE + c.base
+    shown = url.split('//', 1)[1].rstrip('/')
+    by = e(composer(c.arr.slug, c.m.get('music', '')))
+    lyr = lyricist(c.arr.slug, c.m.get('words', ''), c.m.get('language', ''))
+    lyr = f' (Lyrics by {e(lyr)})' if lyr else ''
+    if c.status == CR:
+        orig_simple = f'Based on the original work by {by} (&copy; {e(c.owner)}).'
+        orig_std = f'Original composition &ldquo;{t}&rdquo; by {by}{lyr}, &copy; {e(c.owner)}, used as they permit.'
+    else:
+        orig_simple = f'Based on the original work by {by} (<a href="{CC0}">CC0</a>).'
+        orig_std = (f'Original composition &ldquo;{t}&rdquo; by {by}{lyr}, dedicated to the public domain under '
+                    f'<a href="{CC0}">CC0 1.0</a>.')
+    simple = (f'&ldquo;{t}&rdquo; (Arrangement) by <a href="{url}">adjiebrotot</a>. Licensed under {lic_link(c)}. '
+              f'{orig_simple}')
+    std = (f'&ldquo;{t}&rdquo; (Rearranged)<br/>Arrangement &copy; {ARR_YEAR} by adjiebrotot '
+           f'(<a href="{url}">{e(shown)}</a>), licensed under {lic_link(c)}.<br/>{orig_std}')
+    return (f'<p class="credit-label">Simple:</p><blockquote class="credit">{simple}</blockquote>'
+            f'<p class="credit-label">Standard:</p><blockquote class="credit">{std}</blockquote>')
 
 
 def licence_answer(c: Ctx) -> str:
-    cr = f'Credit it as: {credit(c)}, {c.lic_name}.'
     if c.status == CR:
-        return (f'The melody of {e(c.title)} is still in copyright and belongs to {e(c.owner)}; using it follows their '
-                f'rules. That usually means it is fine at meetings, educational events, cultural ceremonies and social '
-                f'activities, but never in a context that defames it, and never commercially without their permission. '
-                f'This arrangement adds one condition only, attribution ({lic_link(c)}): once you have a commercial '
-                f'licence for the melody, you need nothing more from me than the credit. {cr}')
-    return (f'Yes, for anything, commercial use included. The melody of {e(c.title)} is in the public domain, and this '
-            f'arrangement, its sheet music and MIDI files are licensed {lic_link(c)}: credit the arrangement and share '
-            f'any adaptation of it under the same licence. {cr}')
+        txt = (f'The melody of {e(c.title)} is still in copyright and belongs to {e(c.owner)}; using it follows their '
+               f'rules. That usually means it is fine at meetings, educational events, cultural ceremonies and social '
+               f'activities, but never in a context that defames it, and never commercially without their permission. '
+               f'This arrangement adds one condition only, attribution ({lic_link(c)}): once you have a commercial '
+               f'licence for the melody, you need nothing more from me than the credit. Credit it like this:')
+    else:
+        txt = (f'Yes, for anything, commercial use included. The melody of {e(c.title)} is in the public domain, and '
+               f'this arrangement, its sheet music and MIDI files are licensed {lic_link(c)}: credit the arrangement '
+               f'and share any adaptation of it under the same licence. Credit it like this:')
+    return f'<p>{txt}</p>{sample_credits(c)}'
 
 
 def _rank(values: list, mine, reverse: bool) -> int:
@@ -557,7 +597,7 @@ def inspiration(c: Ctx) -> str:
 
 def common_faq(c: Ctx, what: str) -> list[tuple[str, str]]:
     m = c.m
-    qa = [(f'Can I use this arrangement of {c.title}, and how do I credit it?', licence_answer(c)),
+    qa = [(f'Can I use this arrangement of {c.title}, and how do I credit it?', licence_answer(c), 'credit'),
           (f'Who wrote {c.title}?',
            f'The music is by {e(m["music"])}' + (f' and the words by {e(m["words"])}' if m.get('words') and 'instrumental' not in m['language'].lower() else '')
            + f'. It was adopted {e(m["adopted"])}.')]

@@ -86,12 +86,24 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-23: PDF footer over the notes: Verovio's auto page breaks can overfill an A4 page (India's full score
+  page 6 ran past the paper), and `a4_pages()` let the content reach into the bottom margin. Now print uses
+  `adjustPageHeight` (the SVG is as tall as its music), `a4_pages()` fits content plus both margins inside A4, the
+  bottom margin is 14 mm, and score.js draws each page from the top with `preserveAspectRatio="xMidYMin meet"`, so an
+  overfilled page is scaled down rather than cut or run under the footer. Test with `page.pdf()` + `pdftoppm`.
+- 2026-11-23: The sample credits (simple and standard) live in the FAQ answer `#credit`; the download card's note only
+  links there. Names come from `composer()` / `lyricist()` in rights.py (anthems.py's music and words text with
+  years stripped, `COMPOSER` / `LYRICIST` where it does not read as a name). "More national anthems" is a random
+  8 per page, seeded by the page URL (stable across rebuilds). No ads between the about sections and the FAQ.
+  site.css, site.js and score.js load as `?v=<content hash>` (`v()` in pages.py): a CSS change once sat behind
+  readers' caches. Nav is Home + About.
+
 - 2026-11-23: Licence per anthem (the user's rule): a public-domain melody makes the arrangement CC BY-SA 4.0; a
   melody still in copyright (composer died under 70 years ago, or a state or body holds it, like ASEAN) belongs to
   its owner, used as they permit, and the arrangement asks only for credit (CC BY 4.0). `build/rights.py` holds
   status, owner (None = "its rights holders in <country>") and the tune's year per slug; a new anthem needs a row.
   The FAQ answers real questions (licence and credit, who wrote it, what inspired the orchestration, how it ranks
-  among the site's anthems), not "can I play the MIDI". Nav is Home + About me; no watermark talk in page copy.
+  among the site's anthems), not "can I play the MIDI". Nav was Home + About me (now About); no watermark talk in page copy.
 
 - 2026-11-23: Rebuilt after the music audit of anthem-orchestra (every arrangement made playable by a symphony
   orchestra and its voicing cleaned: `output/orchestra/AUDIT.md` there): 53 MIDIs, 53 chorus cuts, 356 scores
