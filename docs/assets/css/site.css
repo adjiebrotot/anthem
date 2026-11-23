@@ -162,6 +162,7 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 .ig-section, .prose, .faq-card { padding: 18px 20px; margin-top: 22px; }
 .ig-section h2, .prose h2, .faq-card h2, .more-anthems h2 { margin: 0 0 12px; font-size: 1.2rem; }
 .ig-grid, .an-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.an-card[hidden] { display: none; }
 .ig-card, .an-card { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border: 1.5px solid var(--border);
                      border-radius: var(--radius-sm); background: var(--panel); color: var(--text); }
 .ig-card:hover, .an-card:hover { border-color: var(--ink-line); box-shadow: var(--sticker); text-decoration: none; transform: translate(-1px, -1px); }

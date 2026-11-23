@@ -30,6 +30,21 @@
     var nm = document.getElementById('noMatch'); if (nm) nm.hidden = any;
   });
 
+  /* "More national anthems": whole rows only, about eight cards (7 columns: one row; 3 columns: 3 x 3). */
+  function fitMore() {
+    document.querySelectorAll('.more-anthems .an-grid').forEach(function (g) {
+      var cards = g.querySelectorAll('.an-card');
+      cards.forEach(function (a) { a.hidden = false; });
+      var cols = getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
+      var rows = Math.max(1, Math.round(8 / cols));
+      var show = Math.min(cards.length, rows * cols);
+      if (show < rows * cols && show > cols) show -= show % cols;
+      cards.forEach(function (a, i) { a.hidden = i >= show; });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fitMore); else fitMore();
+  window.addEventListener('resize', fitMore);
+
   // off the live site (a preview), show where each ad unit sits instead of asking Google for one
   if (!/(^|\.)adjiebrotots\.com$/.test(location.hostname)) {
     document.documentElement.classList.add('ad-preview');
