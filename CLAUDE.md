@@ -40,8 +40,9 @@ $PY build/build.py --no-render                   # no Chromium: keeps the share 
 ```
 
 **How a page works** (`docs/assets/js/score.js`). Verovio's JS toolkit (jsDelivr, `verovio@6.4.1`, the version the
-Python build uses: keep the two equal) loads the page's MEI and lays it out for the screen width (zoom buttons, the
-words get more room on a phone). Play loads spessasynth (an AudioWorklet SoundFont synth, the core the orchestra app
+Python build uses: keep the two equal) loads the page's MEI and lays it out as one continuous line of music
+(`breaks: 'none'`, no header) that scrolls sideways, the instrument names pinned at the left (zoom buttons, the words
+get more room on a phone). Play loads spessasynth (an AudioWorklet SoundFont synth, the core the orchestra app
 runs) with only the presets the page's orchestra MIDI uses, then plays that MIDI through the anthem's gain (to -16
 LUFS, as the app does) and a limiter. `#amPlayer` holds the MIDI's tempo map ([beat, second, bpm]), which turns the
 sequencer's time into beats, and Verovio's timemap gives every note's start and end in beats: notes sounding get the
@@ -86,6 +87,12 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-23: The screen score is one continuous system (`breaks: 'none'`, `adjustPageWidth`) in a sideways
+  scroller; Verovio's `svgViewBox` SVG has no width/height, so score.js sets them from the viewBox (1 unit = 1 px).
+  The pinned names are a copy of the SVG (ids stripped, so `getElementById` still finds the real notes) cut where the
+  first measure's staff lines start; single-staff pages have no label and pin nothing. Playback scrolls the line
+  sideways (`keepInLine`). Footer is only "Made in Australia ..." with the Australian flag and Indonesian badge (as
+  on tool.adjiebrotots.com); the licences live in the FAQ. Prose and home title run the full width.
 - 2026-11-23: PDF footer over the notes: Verovio's auto page breaks can overfill an A4 page (India's full score
   page 6 ran past the paper), and `a4_pages()` let the content reach into the bottom margin. Now print uses
   `adjustPageHeight` (the SVG is as tall as its music), `a4_pages()` fits content plus both margins inside A4, the

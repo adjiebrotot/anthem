@@ -182,11 +182,10 @@ def header() -> str:
 
 
 def footer() -> str:
-    return f'''<footer class="container page-footer"><section class="page-footer-info card">
-  <p class="footer-links"><a href="/">All anthems</a> · <a href="https://tool.adjiebrotots.com/privacy/">Privacy Policy</a> · <a href="https://tool.adjiebrotots.com/disclaimer/">Disclaimer</a> · <a href="https://www.adjiebrotots.com/">adjiebrotots.com</a> · <span class="footer-updated">Updated <time datetime="{TODAY.isoformat()}">{TODAY.day} {TODAY:%B %Y}</time></span></p>
-  <p>The arrangements, sheet music and MIDI files are by adjiebrotot. Where the anthem's melody is in the public domain they are licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; where the melody is still in copyright it belongs to its owner, and the arrangement asks only for credit (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Each anthem's page says which applies.</p>
-  <p class="footer-credits">The player plays the MIDI in your browser with <a href="https://github.com/spessasus/spessasynth_lib">spessasynth</a> (<a href="/assets/js/vendor/spessasynth-LICENSE.txt">Apache 2.0</a>) and the SoundFont of the <a href="https://orchestra.adjiebrotots.com/">orchestra app</a>: <a href="http://vis.versilstudios.net/vsco-community.html">VSCO 2 Community Edition</a> and VCSL by Versilian Studios (Sam Gossner) and Ivy Audio (Simon Dalzell), over <a href="https://www.schristiancollins.com">GeneralUser GS</a> by S. Christian Collins (<a href="/assets/sf/GeneralUser-GS-LICENSE.txt">licence</a>). Scores drawn by <a href="https://www.verovio.org/">Verovio</a>.</p>
-  <div class="footer-made"><img src="/assets/img/indonesian.png" alt="" width="36" height="36"/><span>Made in Australia by <a href="https://www.adjiebrotots.com/" rel="author">Adjie Brotosukmono</a>, an Indonesian engineer.</span></div>
+    return f'''<footer class="container page-footer"><section class="page-footer-info card footer-made">
+  <img class="footer-flag" src="/assets/img/australian.png" alt="Australian flag" width="36" height="36" loading="lazy"/>
+  <img class="footer-badge" src="/assets/img/indonesian.png" alt="Indonesian badge" width="48" height="16" loading="lazy"/>
+  <span>Made in Australia by <a href="https://www.adjiebrotots.com/about/" rel="author">Adjie Brotosukmono</a>, an Indonesian engineer.</span>
 </section></footer>
 <script src="/assets/js/dropdown.js"></script>
 <script src="{v('/assets/js/site.js')}"></script>
