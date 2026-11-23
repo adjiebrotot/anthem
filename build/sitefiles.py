@@ -17,6 +17,8 @@ sys.path.insert(0, str(HERE))
 from pages import (kind, BRAND, DOCS, MANIFEST, PERSON, PUB, REGION_NAMES, SITE, SLOT_MULTI1, SLOT_MULTI2, SLOT_TOP, TODAY,  # noqa: E402
                    ad, country_title, e, flag, faq_block, faq_ld, footer, head, header)
 
+from rights import CR, RIGHTS  # noqa: E402
+
 REGION_ORDER = ['asia', 'europe', 'americas', 'middle-east', 'africa', 'oceania']
 
 
@@ -46,19 +48,20 @@ def home(man: dict) -> str:
                         f'<div class="an-grid">{"".join(cards)}</div></section>')
         if r == 'europe':
             sections.append(ad(SLOT_MULTI1, fmt='autorelaxed', cls='ad-multi'))
-    faq = [('Is the sheet music free?',
-            'Yes. Every PDF and MIDI file here is free to download for practice, school and community performances. '
-            'The PDFs carry the anthem.adjiebrotots.com watermark.'),
-           ('Are the melodies the official ones?',
-            'Yes. Each tune is the official melody, note for note, checked against published scores and MIDI files; '
-            'only the orchestration is new.'),
-           ('Which instruments are there?',
-            'Strings (violin, viola, cello, double bass), woodwinds (piccolo, flute, oboe, clarinet, bassoon), brass '
-            '(French horn, trumpet, trombone, tuba), timpani and percussion, harp, piano and choir, as each arrangement uses them. '
-            'Clarinet, trumpet and horn parts are transposed; the full score is in concert pitch.'),
-           ('Can I play the MIDI files?',
-            'Yes. Each anthem has a full orchestral MIDI (one track per part), a short chorus version, the melody alone '
-            'and a MIDI for every part, for practice, a DAW or notation software.')]
+    copyrighted = [country_title(v['country']) for k, v in items_k if RIGHTS.get(k, ('',))[0] == CR]
+    faq = [('What licence are the arrangements under?',
+            'It depends on the melody. Most national anthems are in the public domain: their arrangements here, with '
+            'the sheet music and MIDI files, are licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>, '
+            'free for any use, commercial too, with credit and adaptations shared alike. Where the melody is still in '
+            'copyright, it belongs to its owner and its use follows their rules (usually fine at meetings, education, '
+            'ceremonies and community events, never in a defaming context or commercially without their licence); the '
+            'arrangement itself asks only for credit (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>).'),
+           ('Which anthems here are still in copyright?',
+            ', '.join(copyrighted) + '. Each of their pages names the owner where it is known.'),
+           ('How do I credit an arrangement?',
+            'Name the anthem, the arranger and the site, and the licence: "Advance Australia Fair", arranged for '
+            'orchestra by adjiebrotot (anthem.adjiebrotots.com), CC BY-SA 4.0. In a concert programme, a video '
+            'description or the credits of a recording, that one line is enough.')]
     ld = {'@context': 'https://schema.org', '@graph': [
         {'@type': 'WebSite', '@id': SITE + '/#website', 'url': SITE + '/', 'name': BRAND,
          'alternateName': 'Anthem Madness by adjiebrotot', 'inLanguage': 'en', 'publisher': {'@id': PERSON},
@@ -74,7 +77,7 @@ def home(man: dict) -> str:
     body = f'''<main class="container">
 <div class="page-title home-title">
   <h1>National anthem sheet music &amp; orchestra MIDI</h1>
-  <p class="geo">Free sheet music and MIDI files of {len(items)} national anthems, each in a full orchestral arrangement: the official melody (with the words where they are sung), a PDF part for every instrument of the orchestra and the conductor's full score. {total_parts} parts in all.</p>
+  <p class="geo">Sheet music and MIDI of {len(items)} national anthems arranged for full orchestra: the full score, a part for every instrument and the melody with its words. {total_parts} parts in all.</p>
   <label class="search"><span class="field-label">Find an anthem</span>
     <input id="anSearch" type="search" placeholder="Country or anthem, e.g. Brazil, Kimigayo" autocomplete="off"/></label>
 </div>
@@ -204,7 +207,9 @@ def llms(man: dict) -> str:
              'Creator: Adjie Brotosukmono (adjiebrotot), https://www.adjiebrotots.com/ (profile for LLMs: '
              'https://www.adjiebrotots.com/llms.txt). Sister sites: https://tool.adjiebrotots.com/ (tools), '
              'https://blog.adjiebrotots.com/ (blog).',
-             'Access: free, no account. PDFs are made in the browser and carry a faint anthem.adjiebrotots.com watermark.', '',
+             'Access: free, no account. Licence: CC BY-SA 4.0 where the melody is in the public domain; where it is still '
+             'in copyright the melody belongs to its owner and the arrangement is CC BY 4.0. Credit: arranged for '
+             'orchestra by adjiebrotot (anthem.adjiebrotots.com).', '',
              '## How the site is laid out', '',
              f'- {SITE}/<country>/ : the anthem: the full orchestra score in concert pitch, drawn in the browser and played '
              'along with the orchestra MIDI in a SoundFont synth (the notes light up as they sound); full orchestra MIDI, chorus MIDI, '

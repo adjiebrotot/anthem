@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 
 from i18n import LANG_OF, native_phrase, words
+from rights import CR, licence, rights
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / 'docs'
@@ -163,9 +164,8 @@ def header() -> str:
       <span class="brand-words"><span>Anthem <b>Madness</b></span><small>by adjiebrotot</small></span>
     </a>
     <nav class="family-nav" aria-label="Site">
-      <a href="/" class="nav-anthems">Anthems</a>
-      <a href="https://tool.adjiebrotots.com/" class="nav-hide-sm">Tools</a>
-      <a href="https://blog.adjiebrotots.com/" class="nav-hide-sm">Blog</a>
+      <a href="/">Home</a>
+      <a href="https://www.adjiebrotots.com/">About me</a>
       <button class="family-theme" id="themeToggle" type="button" aria-label="Switch theme"></button>
     </nav>
   </div>
@@ -176,7 +176,7 @@ def header() -> str:
 def footer() -> str:
     return f'''<footer class="container page-footer"><section class="page-footer-info card">
   <p class="footer-links"><a href="/">All anthems</a> · <a href="https://tool.adjiebrotots.com/privacy/">Privacy Policy</a> · <a href="https://tool.adjiebrotots.com/disclaimer/">Disclaimer</a> · <a href="https://www.adjiebrotots.com/">adjiebrotots.com</a> · <span class="footer-updated">Updated <time datetime="{TODAY.isoformat()}">{TODAY.day} {TODAY:%B %Y}</time></span></p>
-  <p>The melodies are the official tunes of public national anthems; the orchestral arrangements, sheet music and MIDI files are by Anthem Madness and free to download for practice, school and community performances. Every PDF carries the anthem.adjiebrotots.com watermark, faint and behind the notes.</p>
+  <p>The arrangements, sheet music and MIDI files are by adjiebrotot. Where the anthem's melody is in the public domain they are licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>; where the melody is still in copyright it belongs to its owner, and the arrangement asks only for credit (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). Each anthem's page says which applies.</p>
   <p class="footer-credits">The player plays the MIDI in your browser with <a href="https://github.com/spessasus/spessasynth_lib">spessasynth</a> (<a href="/assets/js/vendor/spessasynth-LICENSE.txt">Apache 2.0</a>) and the SoundFont of the <a href="https://orchestra.adjiebrotots.com/">orchestra app</a>: <a href="http://vis.versilstudios.net/vsco-community.html">VSCO 2 Community Edition</a> and VCSL by Versilian Studios (Sam Gossner) and Ivy Audio (Simon Dalzell), over <a href="https://www.schristiancollins.com">GeneralUser GS</a> by S. Christian Collins (<a href="/assets/sf/GeneralUser-GS-LICENSE.txt">licence</a>). Scores drawn by <a href="https://www.verovio.org/">Verovio</a>.</p>
   <div class="footer-made"><img src="/assets/img/indonesian.png" alt="" width="36" height="36"/><span>Made in Australia by <a href="https://www.adjiebrotots.com/" rel="author">Adjie Brotosukmono</a>, an Indonesian engineer.</span></div>
 </section></footer>
@@ -236,6 +236,9 @@ class Ctx:
         self.Kind = kind(b.arr.slug)                     # National Anthem / Anthem
         self.kind = 'the ' + self.Kind.lower()           # the national anthem / the anthem
         self.w = words(b.arr.slug)
+        self.status, self.holder, self.year = rights(b.arr.slug)
+        self.lic_name, self.lic_url = licence(b.arr.slug)
+        self.owner = self.holder or f'its rights holders in {self.ct}'
 
     def inst_word(self, slug):
         if not self.w:
@@ -256,15 +259,17 @@ def composition_ld(c: Ctx) -> dict:
          'description': f"{c.Kind[0]}{c.Kind[1:].lower()} of {c.country}.", 'url': SITE + c.base,
          'composer': {'@type': 'Person', 'name': m['music']}, 'inLanguage': m['language'],
          'musicArrangement': {'@type': 'MusicComposition', 'name': f'{c.title} (orchestral arrangement)',
-                              'creator': {'@id': PERSON}}}
+                              'creator': {'@id': PERSON}, 'license': c.lic_url}}
     if m.get('words') and 'instrumental' not in m['language'].lower():
         d['lyricist'] = {'@type': 'Person', 'name': m['words']}
     return d
 
 
-def doc_ld(name: str, url: str, fmt: str, size: int = 0) -> dict:
+def doc_ld(name: str, url: str, fmt: str, size: int = 0, lic: str = '') -> dict:
     d = {'@type': 'DigitalDocument' if fmt == 'application/pdf' else 'MediaObject', 'name': name, 'url': SITE + url,
-         'encodingFormat': fmt, 'isAccessibleForFree': True, 'license': SITE + '/#license'}
+         'encodingFormat': fmt, 'isAccessibleForFree': True}
+    if lic:
+        d['license'] = lic
     if size:
         d['contentSize'] = kb(size)
     return d
@@ -294,7 +299,7 @@ def player(c: Ctx, what: str, part: bool = False) -> str:
                      for v in ('0.5', '0.75', '1', '1.25'))
     return f'''<div class="player" id="player">
   <button type="button" class="pl-play" aria-label="Play">{ICO_PLAY}{ICO_PAUSE}</button>
-  <div class="pl-main"><span class="pl-title">Full orchestra · {e(what)} highlighted</span>
+  <div class="pl-main"><span class="pl-title">Full orchestra</span>
     <div class="pl-line"><span class="pl-time"><span class="pl-cur">0:00</span> / <span class="pl-dur">0:00</span></span>
     <input type="range" class="pl-seek" min="0" max="1000" value="0" step="1" aria-label="Position in the music"/></div></div>
   <div class="pl-tools">
@@ -366,7 +371,7 @@ def download_card(c: Ctx, parts, extra: list) -> str:
   <h2 id="dlTitle">Download</h2>
   <ul class="dl-list">{''.join(rows)}</ul>
   {sub}
-  <p class="dl-note">Free for practice, school and community performance. The PDF is drawn in your browser at A4, with the anthem.adjiebrotots.com watermark faint behind the notes.</p>
+  <p class="dl-note">{licence_note(c)}</p>
 </section>'''
 
 
@@ -465,22 +470,105 @@ def layout(c: Ctx, *, h1: str, lead: str, crumbs_items, viewer: str, side_dl: st
 '''
 
 
+def credit(c: Ctx) -> str:
+    return f'"{e(c.title)}", arranged for orchestra by adjiebrotot (anthem.adjiebrotots.com)'
+
+
+def lic_link(c: Ctx) -> str:
+    return f'<a href="{c.lic_url}">{c.lic_name}</a>'
+
+
+def licence_note(c: Ctx) -> str:
+    """The line under the download buttons."""
+    if c.status == CR:
+        return (f'The melody belongs to {e(c.owner)}: fine for meetings, education, ceremonies and community events, '
+                f'commercial use needs their licence. The arrangement asks only for credit ({lic_link(c)}).')
+    return f'The melody is in the public domain; this arrangement is {lic_link(c)}: credit adjiebrotot and share alike.'
+
+
+def licence_answer(c: Ctx) -> str:
+    cr = f'Credit it as: {credit(c)}, {c.lic_name}.'
+    if c.status == CR:
+        return (f'The melody of {e(c.title)} is still in copyright and belongs to {e(c.owner)}; using it follows their '
+                f'rules. That usually means it is fine at meetings, educational events, cultural ceremonies and social '
+                f'activities, but never in a context that defames it, and never commercially without their permission. '
+                f'This arrangement adds one condition only, attribution ({lic_link(c)}): once you have a commercial '
+                f'licence for the melody, you need nothing more from me than the credit. {cr}')
+    return (f'Yes, for anything, commercial use included. The melody of {e(c.title)} is in the public domain, and this '
+            f'arrangement, its sheet music and MIDI files are licensed {lic_link(c)}: credit the arrangement and share '
+            f'any adaptation of it under the same licence. {cr}')
+
+
+def _rank(values: list, mine, reverse: bool) -> int:
+    return sorted(values, reverse=reverse).index(mine) + 1
+
+
+def _ordinal(n: int) -> str:
+    if n == 1:
+        return ''
+    suf = 'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+    return f'{n}{suf} '
+
+
+def _secs(t: str) -> int:
+    m, _, sec = t.partition(':')
+    return int(m) * 60 + int(sec) if sec else 0
+
+
+def compare_answer(c: Ctx) -> str:
+    """How this anthem stands among the others on the site: the age of its tune, the length and size of the score."""
+    from rights import RIGHTS
+    n = len(c.man)
+    bits = []
+    years = [y for k, (_, _, y) in RIGHTS.items() if y and k in c.man]
+    if c.year and c.year in years:
+        old = _rank(years, c.year, False)
+        if old <= len(years) // 2:
+            bits.append(f'Its tune dates from {c.year}, the {_ordinal(old)}oldest of the {n} anthems on this site')
+        else:
+            bits.append(f'Its tune dates from {c.year}, the {_ordinal(_rank(years, c.year, True))}newest of the {n} anthems on this site')
+    lens = [_secs(v.get('length', '')) for v in c.man.values() if v.get('length')]
+    mine = _secs(c.length) if c.length else 0
+    if mine and mine in lens:
+        lo, hi = _rank(lens, mine, False), _rank(lens, mine, True)
+        bits.append(f'At {e(c.length)} this arrangement is the {_ordinal(hi)}longest' if hi <= lo
+                    else f'At {e(c.length)} this arrangement is the {_ordinal(lo)}shortest')
+    parts = [v['parts'] for v in c.man.values() if v.get('parts')]
+    np_ = len(c.arr.parts)
+    if np_ in parts:
+        big = _rank(parts, np_, True)
+        if big <= n // 3:
+            bits.append(f'and with {np_} parts it is among the largest scores here')
+        elif big > n - n // 3:
+            bits.append(f'and with {np_} parts it is among the smallest scores here')
+        else:
+            bits.append(f'and it has {np_} parts')
+    out = ''
+    for b in bits:
+        out += (', ' if b.startswith('and ') else ('. ' if out else '')) + b
+    return out + '.' if out else ''
+
+
+def inspiration(c: Ctx) -> str:
+    orch = c.m.get('orch', '')
+    first = orch.split('. ')[0].rstrip('.')
+    return e(first) + '.' if first else ''
+
+
 def common_faq(c: Ctx, what: str) -> list[tuple[str, str]]:
     m = c.m
-    qa = [(f'Is the {what} of {c.title} free to download?',
-           f'Yes. The PDF and the MIDI files on this page are free for practice, school and community performances. '
-           f'Each PDF carries the anthem.adjiebrotots.com watermark.'),
-          ('Can I listen to it while I read?',
-           'Yes. Press play above the score: the full orchestra plays in your browser and the notes light up as they sound, '
-           'with the page scrolling along. Click any note to play from there, or slow it down to practise.'),
+    qa = [(f'Can I use this arrangement of {c.title}, and how do I credit it?', licence_answer(c)),
           (f'Who wrote {c.title}?',
            f'The music is by {e(m["music"])}' + (f' and the words by {e(m["words"])}' if m.get('words') and 'instrumental' not in m['language'].lower() else '')
-           + f'. It was adopted {e(m["adopted"])}.'),
-          ('Is the melody the official one?',
-           'Yes. The tune is the official melody, note for note, checked against published scores; only the orchestration is new.'),
-          ('What key and tempo is it in?',
-           f'This arrangement is in {e(c.key_meter)}' + (f' and starts at about {c.bpm} beats per minute' if c.bpm else '')
-           + (f'; it lasts {e(c.length)}.' if c.length else '.'))]
+           + f'. It was adopted {e(m["adopted"])}.')]
+    if inspiration(c):
+        qa.append(('What inspired the orchestration?', inspiration(c)))
+    cmp = compare_answer(c)
+    if cmp:
+        qa.append((f'How does {c.title} compare with the other anthems here?', cmp))
+    qa.append(('What key and tempo is it in?',
+               f'This arrangement is in {e(c.key_meter)}' + (f' and starts at about {c.bpm} beats per minute' if c.bpm else '')
+               + (f'; it lasts {e(c.length)}.' if c.length else '.')))
     return qa
 
 
@@ -515,11 +603,10 @@ def inst_page(c: Ctx, g) -> str:
             f'{len(parts)} part{"s" if many else ""}: ' + ', '.join(e(p.label) for p in parts)
             + (f'. Parts are written for the {e(inst.name.lower())} {e(inst.transpose_name)}, so they read a transposition above the sounding pitch; the full score is in concert pitch.' if inst.transpose_name else '.'))]
     faq += common_faq(c, f'{name.lower()} sheet music')
-    lead_sentence = (f'<p class="geo">{e(c.title)} is {c.kind} of {e(c.country)}. This page has the '
-                     f'{e(name.lower())} part{"s" if many else ""} of a full orchestral arrangement as sheet music to '
-                     f'read along with the orchestra, with a PDF and a MIDI file for each part.</p>')
+    lead_sentence = (f'<p class="geo">The {e(name.lower())} part{"s" if many else ""} of a {len(c.arr.parts)}-part '
+                     f'orchestral arrangement of {e(c.title)}, {c.kind} of {e(c.country)}.</p>')
     ld = page_ld(c, url, title, desc, items, faq,
-                 [doc_ld(f'{c.title} {p.label} (MIDI)', p.mid, 'audio/midi') for p in parts if p.mid])
+                 [doc_ld(f'{c.title} {p.label} (MIDI)', p.mid, 'audio/midi', lic=c.lic_url) for p in parts if p.mid])
     viewer = score_viewer(c, parts, inst.slug, name.lower() + (' parts' if many else ' part'))
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,
                   side_dl=download_card(c, parts, whole_extra(c)), current=inst.slug, faq=faq)
@@ -546,21 +633,12 @@ def country_page(c: Ctx) -> str:
         bits.append(f'<span lang="und">{e(c.native[0])}</span>')
     bits.append(f'Full orchestra score, {len(c.arr.parts)} parts')
     lead = ' · '.join(bits)
-    play = ': press play and the notes light up as the orchestra plays them'
     lead_sentence = (f'<p class="geo">{e(c.title)} is {c.kind} of {e(c.country)}, with music by '
-                     f'{e(c.m["music"])}. Below is the full score of a {len(c.arr.parts)}-part orchestral arrangement in '
-                     f'concert pitch{play}. The melody' + (' with the words' if c.arr.lyrics else '')
-                     + ' and every instrument have pages of their own.</p>')
+                     f'{e(c.m["music"])}. Full score for {len(c.arr.parts)}-part orchestra, in concert pitch.</p>')
     items = [('Anthems', '/'), (c.ct, url)]
-    faq = [(f'Can I download {c.title} as MIDI?',
-            f'Yes: the full orchestral arrangement ({len(c.arr.parts)} parts, one track per part), the melody alone, a '
-            f'short chorus version and a MIDI for every part.'),
-           ('Is there sheet music for my instrument?',
-            'Pick your instrument in the menu above the score: the melody, '
-            + ', '.join(g.inst.name.lower() for g in c.b.insts) + '. This page has the full score with every part in concert pitch.')]
-    faq += common_faq(c, 'sheet music')
+    faq = common_faq(c, 'sheet music')
     ld = page_ld(c, url, title, desc, items, faq,
-                 [doc_ld(f'{c.title} full orchestra (MIDI)', c.b.orchestra_mid, 'audio/midi')])
+                 [doc_ld(f'{c.title} full orchestra (MIDI)', c.b.orchestra_mid, 'audio/midi', lic=c.lic_url)])
     viewer = score_viewer(c, [fs], 'full-score', 'full score')
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,
                   side_dl=download_card(c, [fs], whole_extra(c, full_pdf=False)), current='full-score', faq=faq)
@@ -580,13 +658,12 @@ def melody_page(c: Ctx) -> str:
             f'plays, then download the PDF and the MIDI, free.' + (f' {nat[:1].upper() + nat[1:]}.' if nat else ''))
     h1 = f'{e(c.title)}: Melody{" and Lyrics" if c.arr.lyrics else ""}'
     lead = f'{c.Kind} of {c.flag}{e(c.ct)} · lead sheet{words}' + (f' · {e(nat)}' if nat else '')
-    play = ' Press play to hear it with the full orchestra and follow the tune as it lights up.'
-    lead_sentence = (f'<p class="geo">The official melody of {e(c.title)}, note for note, on one staff'
-                     + (' with the words under the notes' if c.arr.lyrics else '') + f'.{play}</p>')
+    lead_sentence = (f'<p class="geo">The melody of {e(c.title)}, {c.kind} of {e(c.country)}, on one staff'
+                     + (' with the words under the notes' if c.arr.lyrics else '') + '.</p>')
     items = [('Anthems', '/'), (c.ct, c.base), ('Melody', url)]
     faq = common_faq(c, 'melody sheet music')
     ld = page_ld(c, url, title, desc, items, faq,
-                 [doc_ld(f'{c.title} melody (MIDI)', mel.mid, 'audio/midi')] if mel.mid else [])
+                 [doc_ld(f'{c.title} melody (MIDI)', mel.mid, 'audio/midi', lic=c.lic_url)] if mel.mid else [])
     viewer = score_viewer(c, [mel], 'melody', 'melody')
     body = layout(c, h1=h1, lead=lead + lead_sentence, crumbs_items=items, viewer=viewer,
                   side_dl=download_card(c, [mel], whole_extra(c, melody=False)), current='melody', faq=faq)
