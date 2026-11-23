@@ -27,8 +27,8 @@ TODAY = dt.date.today()
 PERSON = 'https://www.adjiebrotots.com/#person'
 
 SLOT_TOP = '4716600974'        # Display 1: banner under the title
-SLOT_BETWEEN = '4447514374'    # Display 2: under the score
-SLOT_MULTI1 = '9720022354'     # Multiplex 1 (home page only)
+SLOT_BETWEEN = '4447514374'    # Display 2: under the score; on the home page, the banner after each region
+SLOT_MULTI1 = '9720022354'     # Multiplex 1 (not placed: the home page has banners between its regions)
 SLOT_MULTI2 = '4659267360'     # Multiplex 2
 SLOT_ARTICLE = '1433722275'    # In-article (not placed: no ads between the about sections and the FAQ)
 SLOT_SIDE = '3134432708'       # Display 4: sticky sidebar

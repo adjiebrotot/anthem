@@ -87,6 +87,14 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-23: AdSense auto ads (side rail, anchor) carry inline `!important` styles that no print style sheet hides,
+  and one landed on a PDF: score.js now writes the A4 pages into a frame of their own (`#pdfFrame`, `PDF_CSS`) and
+  prints that frame, always black on white. The screen score follows the theme: `--paper`, `--score-ink`,
+  `--score-play`, `--score-band` in site.css (night default, `body.light` for day); Verovio's black (`color="black"`
+  on the inner svg, `fill="#000000"` glyphs) is overridden in CSS. Home: search under the top ad; a banner
+  (`.ad-cell`, Display 2) after each region but the last, inside its grid: `fitRegionAds()` in site.js spans it over
+  the last row's empty cells (2+), else a row of its own, before the ads are filled. With no anthem-orchestra
+  checkout, an asset-only change is shipped by swapping the `?v=` hashes in every page (what a rebuild would do).
 - 2026-11-23: "More national anthems" ships 12 cards; `fitMore()` in site.js shows whole rows only, round(8 / columns)
   rows (7 columns: 7, 3 columns: 9, 4: 8), again on resize. Page JS must sit above site.js's off-domain ad-preview
   `return`, or it never runs in local tests. `.an-card[hidden]` needs its own `display: none` (the card is flex).
