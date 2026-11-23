@@ -87,6 +87,9 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-23: "More national anthems" ships 12 cards; `fitMore()` in site.js shows whole rows only, round(8 / columns)
+  rows (7 columns: 7, 3 columns: 9, 4: 8), again on resize. Page JS must sit above site.js's off-domain ad-preview
+  `return`, or it never runs in local tests. `.an-card[hidden]` needs its own `display: none` (the card is flex).
 - 2026-11-23: The screen score is one continuous system (`breaks: 'none'`, `adjustPageWidth`) in a sideways
   scroller; Verovio's `svgViewBox` SVG has no width/height, so score.js sets them from the viewBox (1 unit = 1 px).
   The pinned names are a copy of the SVG (ids stripped, so `getElementById` still finds the real notes) cut where the

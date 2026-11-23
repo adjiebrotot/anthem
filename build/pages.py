@@ -450,10 +450,10 @@ def about_sections(c: Ctx) -> str:
 
 
 def more_anthems(c: Ctx, seed: str) -> str:
-    """Eight other anthems of the site, picked at random per page (seeded by its URL, so a rebuild keeps the pick
-    while the site has the same anthems)."""
+    """Up to twelve other anthems of the site, picked at random per page (seeded by its URL, so a rebuild keeps the
+    pick while the site has the same anthems). site.js shows only whole rows of them (about eight) per width."""
     others = sorted((k for k in c.man if k != c.arr.slug))
-    pick = [c.man[k] for k in random.Random(f'{seed}|{",".join(others)}').sample(others, min(8, len(others)))]
+    pick = [c.man[k] for k in random.Random(f'{seed}|{",".join(others)}').sample(others, min(12, len(others)))]
     if not pick:
         return ''
     cards = ''.join(f'<a class="an-card" href="/{v["country_slug"]}/"><span class="an-country">{flag(v["country_slug"])}{e(country_title(v["country"]))}</span>'
