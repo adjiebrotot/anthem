@@ -14,7 +14,7 @@ from xml.sax.saxutils import escape as xesc
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
-from pages import (kind, BRAND, DOCS, MANIFEST, PERSON, PUB, REGION_NAMES, SITE, SLOT_MULTI1, SLOT_MULTI2, SLOT_TOP, TODAY,  # noqa: E402
+from pages import (kind, BRAND, DOCS, MANIFEST, PERSON, PUB, REGION_NAMES, SITE, SLOT_BETWEEN, SLOT_MULTI2, SLOT_TOP, TODAY,  # noqa: E402
                    ad, country_title, e, flag, faq_block, faq_ld, footer, head, header)
 
 from rights import CR, RIGHTS  # noqa: E402
@@ -30,10 +30,9 @@ def home(man: dict) -> str:
     desc = (f'Free sheet music and MIDI of {len(items)} national anthems in full orchestral arrangements: read the full '
             f'score as the orchestra plays, the melody with lyrics and every instrument as a PDF part (violin, flute, trumpet ...).')
     sections = []
-    for r in REGION_ORDER:
+    regions = [r for r in REGION_ORDER if any(v['region'] == r for v in items)]
+    for r in regions:
         group = [v for v in items if v['region'] == r]
-        if not group:
-            continue
         cards = []
         for v in group:
             nat = v['native'][0] if v.get('native') and v['native'][0] != v['title'] else ''
@@ -44,10 +43,12 @@ def home(man: dict) -> str:
                 f'<span class="an-title">{e(v["title"])}</span>'
                 + (f'<span class="an-nat" lang="und">{e(nat)}</span>' if nat else '')
                 + f'<span class="an-meta">{len(v["insts"])} instruments · {v["parts"]} parts · {e(v.get("length", ""))}</span></a>')
+        # a banner after each region but the last, inside its grid: site.js spans it over the empty cells of the
+        # last row when there are two or more, else it takes a row of its own under the cards
+        if r != regions[-1]:
+            cards.append(ad(SLOT_BETWEEN, fmt='horizontal', cls='ad-cell', extra=' data-full-width-responsive="false"'))
         sections.append(f'<section class="region" aria-labelledby="r-{r}"><h2 id="r-{r}">{REGION_NAMES[r]}</h2>'
                         f'<div class="an-grid">{"".join(cards)}</div></section>')
-        if r == 'europe':
-            sections.append(ad(SLOT_MULTI1, fmt='autorelaxed', cls='ad-multi'))
     copyrighted = [country_title(v['country']) for k, v in items_k if RIGHTS.get(k, ('',))[0] == CR]
     faq = [('What licence are the arrangements under?',
             'It depends on the melody. Most national anthems are in the public domain: their arrangements here, with '
@@ -78,10 +79,10 @@ def home(man: dict) -> str:
 <div class="page-title home-title">
   <h1>National anthem sheet music &amp; orchestra MIDI</h1>
   <p class="geo">Sheet music and MIDI of {len(items)} national anthems arranged for full orchestra: the full score, a part for every instrument and the melody with its words. {total_parts} parts in all.</p>
-  <label class="search"><span class="field-label">Find an anthem</span>
-    <input id="anSearch" type="search" placeholder="Country or anthem, e.g. Brazil, Kimigayo" autocomplete="off"/></label>
 </div>
 {ad(SLOT_TOP, fmt='horizontal', cls='ad-top')}
+<label class="search"><span class="field-label">Find an anthem</span>
+  <input id="anSearch" type="search" placeholder="Country or anthem, e.g. Brazil, Kimigayo" autocomplete="off"/></label>
 {''.join(sections)}
 <p class="no-match" id="noMatch" hidden>No anthem matches that search yet.</p>
 {faq_block(faq)}

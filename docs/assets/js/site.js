@@ -28,17 +28,32 @@
       r.hidden = !shown; if (shown) any = true;
     });
     var nm = document.getElementById('noMatch'); if (nm) nm.hidden = any;
+    fitRegionAds();
   });
+
+  /* home: the banner after each region sits in the empty cells of the grid's last row when there are two or more,
+     else on a row of its own under the cards (must run before the ads are filled: they take the width they get) */
+  function cols(g) { return getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length || 1; }
+  function fitRegionAds() {
+    document.querySelectorAll('.region .an-grid').forEach(function (g) {
+      var cell = g.querySelector('.ad-cell');
+      if (!cell) return;
+      var n = g.querySelectorAll('.an-card:not([hidden])').length, c = cols(g), gap = n % c ? c - n % c : 0;
+      cell.style.gridColumn = gap >= 2 ? 'span ' + gap : '1 / -1';
+      cell.classList.toggle('is-inline', gap >= 2);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fitRegionAds); else fitRegionAds();
+  window.addEventListener('resize', fitRegionAds);
 
   /* "More national anthems": whole rows only, about eight cards (7 columns: one row; 3 columns: 3 x 3). */
   function fitMore() {
     document.querySelectorAll('.more-anthems .an-grid').forEach(function (g) {
       var cards = g.querySelectorAll('.an-card');
       cards.forEach(function (a) { a.hidden = false; });
-      var cols = getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length || 1;
-      var rows = Math.max(1, Math.round(8 / cols));
-      var show = Math.min(cards.length, rows * cols);
-      if (show < rows * cols && show > cols) show -= show % cols;
+      var c = cols(g), rows = Math.max(1, Math.round(8 / c));
+      var show = Math.min(cards.length, rows * c);
+      if (show < rows * c && show > c) show -= show % c;
       cards.forEach(function (a, i) { a.hidden = i >= show; });
     });
   }

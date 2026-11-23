@@ -483,10 +483,20 @@
   }
 
   /* ------------------------------------------------------------------ PDF */
-  var stage = null, tip = null, overlay = null, pending = null, oldTitle = '';
+  /* The pages are printed from a frame of their own, not from this page: AdSense auto ads (side rails, anchors) sit
+     on this page with inline !important styles that no print style sheet can hide, and they landed on the PDF. The
+     frame holds only the A4 pages, always black notes on white paper whatever the site's theme. */
+  var PDF_CSS = '@page{size:A4;margin:0}html,body{margin:0;padding:0;background:#fff}' +
+    '.pdf-page{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;page-break-after:always;break-after:page}' +
+    '.pdf-page:last-child{page-break-after:auto;break-after:auto}' +
+    '.pdf-page,.pdf-page *{-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.pdf-page svg{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:1;color:#000}' +
+    '.pdf-wm{position:absolute;z-index:0;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-38deg);white-space:nowrap;' +
+    "font:700 15mm/1 'DM Sans',Arial,sans-serif;letter-spacing:.5mm;color:#000;opacity:.07;pointer-events:none}" +
+    ".pdf-ft{position:absolute;z-index:2;left:0;right:0;bottom:6mm;text-align:center;font:500 3.2mm/1.2 'DM Sans',Arial,sans-serif;color:#555}";
+  var frame = null, tip = null, overlay = null, pending = null, oldTitle = '';
   function ensureUi() {
-    if (stage) return;
-    stage = el('div'); stage.id = 'pdfStage'; stage.setAttribute('aria-hidden', 'true'); body.appendChild(stage);
+    if (overlay) return;
     overlay = el('div'); overlay.id = 'pdfOverlay';
     overlay.innerHTML = '<div class="pdf-overlay-card"><div class="spinner"></div><div class="pdf-overlay-msg" id="pdfOverlayMsg">Preparing pages…</div></div>';
     body.appendChild(overlay);
@@ -508,13 +518,37 @@
       closeTip();
       if (pending) runPrint(pending);
     });
-    window.addEventListener('afterprint', cleanup);
   }
   function closeTip() { tip.classList.remove('visible'); tip.setAttribute('aria-hidden', 'true'); }
   function cleanup() {
-    if (stage) stage.innerHTML = '';
+    if (frame) { frame.parentNode.removeChild(frame); frame = null; }
     if (oldTitle) { document.title = oldTitle; oldTitle = ''; }
   }
+  // a frame holding only the pages; resolves when its fonts (watermark, footer) are ready to print
+  function pagesFrame(title, html) {
+    frame = el('iframe'); frame.id = 'pdfFrame';
+    frame.setAttribute('aria-hidden', 'true'); frame.setAttribute('tabindex', '-1'); frame.title = title;
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;';
+    body.appendChild(frame);
+    var d = frame.contentDocument;
+    d.open();
+    d.write('<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>' + esc(title) + '</title>' +
+      '<link rel="stylesheet" href="/assets/css/fonts.css"/><style>' + PDF_CSS + '</style></head><body>' + html + '</body></html>');
+    d.close();
+    var link = d.querySelector('link');
+    var css = new Promise(function (ok) {
+      if (link.sheet) { ok(); return; }
+      link.onload = link.onerror = ok; setTimeout(ok, 3000);
+    });
+    return css.then(function () {
+      if (!d.fonts || !d.fonts.load) return;
+      return Promise.race([
+        Promise.all([d.fonts.load("700 15mm 'DM Sans'"), d.fonts.load("500 3.2mm 'DM Sans'")]).then(function () { return d.fonts.ready; }),
+        new Promise(function (ok) { setTimeout(ok, 3000); })
+      ]);
+    }).catch(function () {});
+  }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function requestPdf(b) {
     ensureUi();
     pending = b;
@@ -539,23 +573,24 @@
       Object.keys(extra).forEach(function (k) { po[k] = extra[k]; });   // what build.py counted the pages with
       ptk.setOptions(po);
       if (!ptk.loadData(r[1])) throw new Error('the score could not be read');
-      var n = ptk.getPageCount();
+      var n = ptk.getPageCount(), html = '';
       for (var i = 1; i <= n; i++) {
-        var pg = el('div', 'pdf-page');
-        pg.appendChild(el('div', 'pdf-wm', 'anthem.adjiebrotots.com'));
-        pg.insertAdjacentHTML('beforeend', ptk.renderToSVG(i));
         // the SVG is as tall as its music: from the top of the page, scaled down if Verovio overfilled the page
-        var svg = pg.querySelector('svg');
-        if (svg) svg.setAttribute('preserveAspectRatio', 'xMidYMin meet');
-        pg.appendChild(el('div', 'pdf-ft')).textContent = footer + ' · page ' + i + ' of ' + n;
-        stage.appendChild(pg);
+        var svg = ptk.renderToSVG(i).replace(/^(\s*<svg\b)/, '$1 preserveAspectRatio="xMidYMin meet"');
+        html += '<div class="pdf-page"><div class="pdf-wm">anthem.adjiebrotots.com</div>' + svg +
+          '<div class="pdf-ft">' + esc(footer + ' · page ' + i + ' of ' + n) + '</div></div>';
       }
       if (ptk.destroy) ptk.destroy();
+      return pagesFrame(name, html);
+    }).then(function () {
+      if (!frame) return;
       overlay.classList.remove('visible');
       oldTitle = document.title;
-      document.title = name;
+      document.title = name;   // the file name the print dialog offers (some browsers take the top page's title)
       try { if (window.gtag) window.gtag('event', 'file_download', { file_name: name + '.pdf', file_extension: 'pdf', link_text: 'PDF' }); } catch (e) {}
-      requestAnimationFrame(function () { requestAnimationFrame(function () { window.print(); }); });
+      var w = frame.contentWindow;
+      w.addEventListener('afterprint', function () { if (oldTitle) { document.title = oldTitle; oldTitle = ''; } });
+      requestAnimationFrame(function () { requestAnimationFrame(function () { w.focus(); w.print(); }); });
     }).catch(function (e) {
       overlay.classList.remove('visible');
       alert('The PDF could not be made here (' + e.message + ').');
