@@ -531,8 +531,8 @@ def compare_answer(c: Ctx) -> str:
     mine = _secs(c.length) if c.length else 0
     if mine and mine in lens:
         lo, hi = _rank(lens, mine, False), _rank(lens, mine, True)
-        bits.append(f'at {e(c.length)} this arrangement is the {_ordinal(hi)}longest' if hi <= lo
-                    else f'at {e(c.length)} this arrangement is the {_ordinal(lo)}shortest')
+        bits.append(f'At {e(c.length)} this arrangement is the {_ordinal(hi)}longest' if hi <= lo
+                    else f'At {e(c.length)} this arrangement is the {_ordinal(lo)}shortest')
     parts = [v['parts'] for v in c.man.values() if v.get('parts')]
     np_ = len(c.arr.parts)
     if np_ in parts:
@@ -543,7 +543,10 @@ def compare_answer(c: Ctx) -> str:
             bits.append(f'and with {np_} parts it is among the smallest scores here')
         else:
             bits.append(f'and it has {np_} parts')
-    return (', '.join(bits) + '.') if bits else ''
+    out = ''
+    for b in bits:
+        out += (', ' if b.startswith('and ') else ('. ' if out else '')) + b
+    return out + '.' if out else ''
 
 
 def inspiration(c: Ctx) -> str:

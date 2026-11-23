@@ -86,6 +86,13 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-23: Licence per anthem (the user's rule): a public-domain melody makes the arrangement CC BY-SA 4.0; a
+  melody still in copyright (composer died under 70 years ago, or a state or body holds it, like ASEAN) belongs to
+  its owner, used as they permit, and the arrangement asks only for credit (CC BY 4.0). `build/rights.py` holds
+  status, owner (None = "its rights holders in <country>") and the tune's year per slug; a new anthem needs a row.
+  The FAQ answers real questions (licence and credit, who wrote it, what inspired the orchestration, how it ranks
+  among the site's anthems), not "can I play the MIDI". Nav is Home + About me; no watermark talk in page copy.
+
 - 2026-11-23: Rebuilt after the music audit of anthem-orchestra (every arrangement made playable by a symphony
   orchestra and its voicing cleaned: `output/orchestra/AUDIT.md` there): 53 MIDIs, 53 chorus cuts, 356 scores
   changed; `check.py notes` 98,250 notes, 0 mismatches; `check.py site` ok. `build.py` copies a MIDI and then stops
