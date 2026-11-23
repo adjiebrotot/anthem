@@ -39,7 +39,7 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 .crumbs a { color: var(--muted); }
 .page-title h1 { font-size: clamp(1.55rem, 3.2vw, 2.3rem); margin: 4px 0 8px; letter-spacing: -.015em; }
 .page-title .lead { margin: 0 0 6px; color: var(--muted); font-weight: 600; }
-.page-title .geo { margin: 8px 0 0; color: var(--text); max-width: 72ch; font-weight: 400; }
+.page-title .geo { margin: 8px 0 0; color: var(--text); font-weight: 400; }
 
 /* ads: no room until filled; labelled; hidden when unfilled and in print */
 .ad-slot { margin: 0; text-align: center; }
