@@ -78,3 +78,55 @@ def rights(slug: str) -> tuple[str, str | None, int | None]:
 def licence(slug: str) -> tuple[str, str]:
     """(name, url) of the arrangement's licence."""
     return BY_SA if RIGHTS[slug][0] == PD else BY
+
+
+# ------------------------------------------------------------------------------------------------ credit lines
+# The names in an attribution, where anthems.py's music / words text (years, notes, phrases) does not read as one.
+COMPOSER = {
+    'bahrain-anthem': 'an uncredited composer',
+    'cambodia-anthem': 'F. Perruchot and J. Jekyll, after a Khmer folk melody',
+    'european-union-anthem': 'Ludwig van Beethoven',
+    'japan-anthem': 'Hayashi Hiromori, harmonised by Franz Eckert',
+    'malaysia-anthem': 'an uncredited composer (the melody of the Perak state anthem)',
+    'netherlands-anthem': 'an anonymous composer (a French melody of 1568)',
+    'poland-anthem': 'an anonymous composer (a Polish folk mazurka)',
+    'south-africa-anthem': 'Enoch Sontonga and Marthinus Lourens de Villiers',
+    'spain-anthem': 'an unknown composer',
+    'sweden-anthem': 'an anonymous composer (a folk melody from Västmanland)',
+    'united-kingdom-anthem': 'an unknown composer',
+    'united-states-anthem': 'John Stafford Smith',
+    'venezuela-anthem': 'Juan José Landaeta (attributed)',
+}
+LYRICIST = {   # '' = no lyricist to name
+    'australia-anthem': 'Peter Dodds McCormick',
+    'belgium-anthem': 'Jenneval and Charles Rogier',
+    'european-union-anthem': '',
+    'ireland-anthem': 'Peadar Kearney and Liam Ó Rinn',
+    'mongolia-anthem': 'Tsendiin Damdinsüren',
+    'netherlands-anthem': '',
+    'philippines-anthem': 'José Palma',
+    'south-africa-anthem': 'Enoch Sontonga, Samuel Mqhayi, C. J. Langenhoven and others',
+    'vatican-anthem': 'Raffaello Lavagna and Antonio Allegra',
+}
+
+
+def _names(text: str) -> str:
+    """'Calixa Lavallée (1880)' -> 'Calixa Lavallée'; parentheses that hold a year go, others stay."""
+    import re
+    t = re.sub(r'\s*\([^()]*\d[^()]*\)', '', text or '').strip()
+    parts = [p.strip() for p in t.split(';') if p.strip()]
+    return ' and '.join(parts) if len(parts) <= 2 else ', '.join(parts[:-1]) + ' and ' + parts[-1]
+
+
+def composer(slug: str, music: str) -> str:
+    return COMPOSER.get(slug) or _names(music)
+
+
+def lyricist(slug: str, words: str, language: str) -> str:
+    """The lyricist to credit, '' for an instrumental anthem or words with no author to name."""
+    if slug in LYRICIST:
+        return LYRICIST[slug]
+    if not words or 'instrumental' in (language or '').lower():
+        return ''
+    n = _names(words)
+    return '' if not n or n[0].islower() else n

@@ -13,7 +13,7 @@
 
   function printOptions(full) {      // build.py print_options()
     var o = { pageWidth: 2100, pageHeight: 2970, scale: full ? 28 : 40, font: 'Leland', footer: 'none', header: 'auto',
-      adjustPageHeight: false, svgViewBox: true, svgRemoveXlink: true, pageMarginTop: 80, pageMarginBottom: 110,
+      adjustPageHeight: true, svgViewBox: true, svgRemoveXlink: true, pageMarginTop: 80, pageMarginBottom: 140,
       pageMarginLeft: 90, pageMarginRight: 90, spacingSystem: full ? 14 : 10 };
     if (full) { o.condense = 'auto'; o.condenseFirstPage = false; }
     return o;
@@ -496,6 +496,9 @@
         var pg = el('div', 'pdf-page');
         pg.appendChild(el('div', 'pdf-wm', 'anthem.adjiebrotots.com'));
         pg.insertAdjacentHTML('beforeend', ptk.renderToSVG(i));
+        // the SVG is as tall as its music: from the top of the page, scaled down if Verovio overfilled the page
+        var svg = pg.querySelector('svg');
+        if (svg) svg.setAttribute('preserveAspectRatio', 'xMidYMin meet');
         pg.appendChild(el('div', 'pdf-ft')).textContent = footer + ' · page ' + i + ' of ' + n;
         stage.appendChild(pg);
       }
