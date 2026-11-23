@@ -86,6 +86,14 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-23: Rebuilt after the music audit of anthem-orchestra (every arrangement made playable by a symphony
+  orchestra and its voicing cleaned: `output/orchestra/AUDIT.md` there): 53 MIDIs, 53 chorus cuts, 356 scores
+  changed; `check.py notes` 98,250 notes, 0 mismatches; `check.py site` ok. `build.py` copies a MIDI and then stops
+  at its missing loudness, so for a batch of new MIDIs copy them over the old `docs/<country>/*-orchestra.mid` first
+  and run `synth.mjs` once (SoundFont: a shallow clone of the public adjiebrotot/orchestra, real file, no LFS). The
+  id-only `.mei.xml` rewrites also differ in a generation timestamp: compare with ids and `YYYY-MM-DDT...` stripped
+  before `git checkout` (706 of 1,062 were unchanged).
+
 - 2026-11-22: Flags beside country names (home and "more anthems" cards, the country page title, the melody and
   instrument leads) are SVG files, never emoji (Windows draws flag emoji as two letters). Wikimedia answers 429 to
   this container, so they come from the flag-icons npm package (`npm pack flag-icons@7.5.0`, `flags/4x3/`: drawn
