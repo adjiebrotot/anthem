@@ -31,7 +31,7 @@
   "parts": 21,
   "region": "americas",
   "title": "Himno Nacional Argentino",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "asean-anthem": {
   "country": "ASEAN",
@@ -63,7 +63,7 @@
   "parts": 19,
   "region": "asia",
   "title": "The ASEAN Way",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "australia-anthem": {
   "country": "Australia",
@@ -95,7 +95,7 @@
   "parts": 20,
   "region": "oceania",
   "title": "Advance Australia Fair",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "bahrain-anthem": {
   "country": "Bahrain",
@@ -127,7 +127,7 @@
   "parts": 18,
   "region": "middle-east",
   "title": "Bahrainona",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "belgium-anthem": {
   "country": "Belgium",
@@ -158,7 +158,7 @@
   "parts": 19,
   "region": "europe",
   "title": "La Brabançonne",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "brazil-anthem": {
   "country": "Brazil",
@@ -190,7 +190,7 @@
   "parts": 18,
   "region": "americas",
   "title": "Hino Nacional Brasileiro",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "brunei-anthem": {
   "country": "Brunei",
@@ -222,7 +222,7 @@
   "parts": 16,
   "region": "asia",
   "title": "Allah Peliharakan Sultan",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "cambodia-anthem": {
   "country": "Cambodia",
@@ -255,7 +255,7 @@
   "parts": 18,
   "region": "asia",
   "title": "Nokoreach",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "canada-anthem": {
   "country": "Canada",
@@ -287,7 +287,7 @@
   "parts": 21,
   "region": "americas",
   "title": "O Canada",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "china-anthem": {
   "country": "China",
@@ -315,7 +315,7 @@
   "parts": 13,
   "region": "asia",
   "title": "March of the Volunteers",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "colombia-anthem": {
   "country": "Colombia",
@@ -346,7 +346,7 @@
   "parts": 19,
   "region": "americas",
   "title": "Himno Nacional de la República de Colombia",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "denmark-anthem": {
   "country": "Denmark",
@@ -376,7 +376,7 @@
   "parts": 17,
   "region": "europe",
   "title": "Der er et yndigt land",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "european-union-anthem": {
   "country": "the European Union",
@@ -409,7 +409,7 @@
   "parts": 21,
   "region": "europe",
   "title": "Anthem of Europe (Ode to Joy)",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "finland-anthem": {
   "country": "Finland",
@@ -439,7 +439,7 @@
   "parts": 15,
   "region": "europe",
   "title": "Maamme",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "france-anthem": {
   "country": "France",
@@ -468,7 +468,7 @@
   "parts": 16,
   "region": "europe",
   "title": "La Marseillaise",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "germany-anthem": {
   "country": "Germany",
@@ -500,7 +500,7 @@
   "parts": 19,
   "region": "europe",
   "title": "Das Lied der Deutschen",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "greece-anthem": {
   "country": "Greece",
@@ -534,7 +534,7 @@
   "parts": 18,
   "region": "europe",
   "title": "Ymnos eis tin Eleftherian",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "india-anthem": {
   "country": "India",
@@ -567,7 +567,7 @@
   "parts": 18,
   "region": "asia",
   "title": "Jana Gana Mana",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "iran-anthem": {
   "country": "Iran",
@@ -599,7 +599,7 @@
   "parts": 22,
   "region": "middle-east",
   "title": "Sorud-e Melli-ye Jomhuri-ye Eslami-ye Iran",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "ireland-anthem": {
   "country": "Ireland",
@@ -633,7 +633,7 @@
   "parts": 20,
   "region": "europe",
   "title": "Amhrán na bhFiann",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "italy-anthem": {
   "country": "Italy",
@@ -663,7 +663,7 @@
   "parts": 17,
   "region": "europe",
   "title": "Il Canto degli Italiani",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "japan-anthem": {
   "country": "Japan",
@@ -697,7 +697,7 @@
   "parts": 18,
   "region": "asia",
   "title": "Kimigayo",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "laos-anthem": {
   "country": "Laos",
@@ -731,7 +731,7 @@
   "parts": 23,
   "region": "asia",
   "title": "Pheng Xat Lao",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "malaysia-anthem": {
   "country": "Malaysia",
@@ -763,7 +763,7 @@
   "parts": 17,
   "region": "asia",
   "title": "Negaraku",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "mexico-anthem": {
   "country": "Mexico",
@@ -793,7 +793,7 @@
   "parts": 18,
   "region": "americas",
   "title": "Himno Nacional Mexicano",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "mongolia-anthem": {
   "country": "Mongolia",
@@ -821,7 +821,7 @@
   "parts": 14,
   "region": "asia",
   "title": "Mongol Ulsyn Töriin Duulal",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "netherlands-anthem": {
   "country": "the Netherlands",
@@ -851,7 +851,7 @@
   "parts": 21,
   "region": "europe",
   "title": "Het Wilhelmus",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "new-zealand-anthem": {
   "country": "New Zealand",
@@ -881,7 +881,7 @@
   "parts": 19,
   "region": "oceania",
   "title": "God Defend New Zealand / Aotearoa",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "north-korea-anthem": {
   "country": "North Korea",
@@ -911,7 +911,7 @@
   "parts": 15,
   "region": "asia",
   "title": "Aegukka",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "norway-anthem": {
   "country": "Norway",
@@ -941,7 +941,7 @@
   "parts": 18,
   "region": "europe",
   "title": "Ja, vi elsker dette landet",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "peru-anthem": {
   "country": "Peru",
@@ -972,7 +972,7 @@
   "parts": 15,
   "region": "americas",
   "title": "Himno Nacional del Perú",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "philippines-anthem": {
   "country": "the Philippines",
@@ -1004,7 +1004,7 @@
   "parts": 17,
   "region": "asia",
   "title": "Lupang Hinirang",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "poland-anthem": {
   "country": "Poland",
@@ -1035,7 +1035,7 @@
   "parts": 22,
   "region": "europe",
   "title": "Mazurek Dąbrowskiego",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "portugal-anthem": {
   "country": "Portugal",
@@ -1064,7 +1064,7 @@
   "parts": 16,
   "region": "europe",
   "title": "A Portuguesa",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "qatar-anthem": {
   "country": "Qatar",
@@ -1096,7 +1096,7 @@
   "parts": 19,
   "region": "middle-east",
   "title": "As-Salam al-Amiri",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "romania-anthem": {
   "country": "Romania",
@@ -1129,7 +1129,7 @@
   "parts": 21,
   "region": "europe",
   "title": "Deșteaptă-te, române!",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "saudi-arabia-anthem": {
   "country": "Saudi Arabia",
@@ -1159,7 +1159,7 @@
   "parts": 19,
   "region": "middle-east",
   "title": "Aash al-Malik",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "singapore-anthem": {
   "country": "Singapore",
@@ -1190,7 +1190,7 @@
   "parts": 18,
   "region": "asia",
   "title": "Majulah Singapura",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "south-africa-anthem": {
   "country": "South Africa",
@@ -1221,7 +1221,7 @@
   "parts": 16,
   "region": "africa",
   "title": "Nkosi Sikelel' iAfrika / Die Stem van Suid-Afrika",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "south-korea-anthem": {
   "country": "South Korea",
@@ -1254,7 +1254,7 @@
   "parts": 20,
   "region": "asia",
   "title": "Aegukga",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "spain-anthem": {
   "country": "Spain",
@@ -1286,7 +1286,7 @@
   "parts": 19,
   "region": "europe",
   "title": "Marcha Real",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "sweden-anthem": {
   "country": "Sweden",
@@ -1317,7 +1317,7 @@
   "parts": 21,
   "region": "europe",
   "title": "Du gamla, du fria",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "switzerland-anthem": {
   "country": "Switzerland",
@@ -1349,7 +1349,7 @@
   "parts": 19,
   "region": "europe",
   "title": "Schweizerpsalm",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "taiwan-anthem": {
   "country": "Taiwan (Republic of China)",
@@ -1379,7 +1379,7 @@
   "parts": 17,
   "region": "asia",
   "title": "Sanmin Zhuyi",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "thailand-anthem": {
   "country": "Thailand",
@@ -1413,7 +1413,7 @@
   "parts": 22,
   "region": "asia",
   "title": "Phleng Chat Thai",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "turkiye-anthem": {
   "country": "Türkiye",
@@ -1442,7 +1442,7 @@
   "parts": 16,
   "region": "europe",
   "title": "İstiklâl Marşı",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "uae-anthem": {
   "country": "the UAE",
@@ -1475,7 +1475,7 @@
   "parts": 17,
   "region": "middle-east",
   "title": "Ishy Bilady",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "ukraine-anthem": {
   "country": "Ukraine",
@@ -1503,7 +1503,7 @@
   "parts": 16,
   "region": "europe",
   "title": "Shche ne vmerla Ukrainy",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "united-kingdom-anthem": {
   "country": "the United Kingdom",
@@ -1534,7 +1534,7 @@
   "parts": 16,
   "region": "europe",
   "title": "God Save the King",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "united-states-anthem": {
   "country": "the United States",
@@ -1563,7 +1563,7 @@
   "parts": 16,
   "region": "americas",
   "title": "The Star-Spangled Banner",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "vatican-anthem": {
   "country": "Vatican City",
@@ -1591,7 +1591,7 @@
   "parts": 14,
   "region": "europe",
   "title": "Inno e Marcia Pontificale",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "venezuela-anthem": {
   "country": "Venezuela",
@@ -1622,7 +1622,7 @@
   "parts": 19,
   "region": "americas",
   "title": "Gloria al Bravo Pueblo",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  },
  "vietnam-anthem": {
   "country": "Vietnam",
@@ -1649,6 +1649,6 @@
   "parts": 13,
   "region": "asia",
   "title": "Tiến Quân Ca",
-  "updated": "2026-11-22"
+  "updated": "2026-11-23"
  }
 }
