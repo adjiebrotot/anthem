@@ -70,17 +70,16 @@
   var full = view && view.getAttribute('data-full') === '1';
   var zoomKey = 'am-zoom-' + (full ? 'full' : 'part');
   var zoom = parseFloat(store(zoomKey)) || 1;
-  var cursor = el('div', 'score-cursor'), curSystem = null, follow = store('am-follow') !== '0';
+  var cursor = el('div', 'score-cursor'), curSystem = null, follow = store('am-follow') !== '0', namesW = 0, showCursor = false;
 
+  // on screen the score is one continuous line of music that scrolls sideways (the page already has the title)
   function screenOptions(w) {
     var base = full ? (w < 640 ? 24 : 30) : (w < 640 ? 34 : 42);
     var scale = Math.max(12, Math.round(base * zoom));
-    var pw = Math.max(600, Math.round(w * 100 / scale));
-    return { pageWidth: pw, pageHeight: Math.round(pw * (full ? 1.6 : 1.414)), scale: scale, adjustPageHeight: true,
-      breaks: 'auto', font: 'Leland', footer: 'none', header: w < 560 ? 'none' : 'auto', svgViewBox: true,
-      svgRemoveXlink: true, pageMarginTop: 60, pageMarginBottom: 60, pageMarginLeft: 50, pageMarginRight: 50,
-      spacingSystem: full ? 12 : 8, condense: full ? 'auto' : 'none', condenseFirstPage: false,
-      lyricSize: 3.6, spacingLinear: !full && w < 640 ? 0.35 : 0.25 };   // room for the words on a phone
+    return { pageWidth: 60000, pageHeight: 60000, scale: scale, adjustPageHeight: true, adjustPageWidth: true,
+      breaks: 'none', font: 'Leland', footer: 'none', header: 'none', svgViewBox: true,
+      svgRemoveXlink: true, pageMarginTop: 50, pageMarginBottom: 40, pageMarginLeft: 50, pageMarginRight: 80,
+      condense: 'none', lyricSize: 3.6, spacingLinear: !full && w < 640 ? 0.35 : 0.25 };   // room for the words on a phone
   }
 
   function status(msg, spin) {
@@ -93,15 +92,49 @@
     var w = view.clientWidth;
     if (!tk || !w) return;
     layoutW = w;
+    namesW = 0;
     tk.setOptions(screenOptions(w));
     tk.redoLayout();
-    var n = tk.getPageCount(), html = '';
-    for (var i = 1; i <= n; i++) html += '<div class="score-page">' + tk.renderToSVG(i) + '</div>';
-    view.innerHTML = html;
+    view.innerHTML = '<div class="score-page"><div class="score-scroll"><div class="score-inner">' + tk.renderToSVG(1) +
+      '</div></div></div>';
+    var svg = view.querySelector('.score-inner svg'), vb = svg && svg.viewBox && svg.viewBox.baseVal;
+    if (vb && vb.width) { svg.setAttribute('width', vb.width); svg.setAttribute('height', vb.height); }   // 1 unit = 1 px
     view.setAttribute('aria-busy', 'false');
     curSystem = null;
+    pinNames();
     Object.keys(on).forEach(function (id) { var e = document.getElementById(id); if (e) e.classList.add('playing'); });
     placeCursor(true);
+  }
+
+  /* the instrument names (and the brackets joining the staves) stay at the left edge while the music scrolls: a copy
+     of the start of the line, cut off where the staff lines begin, laid over the scrolling score */
+  function pinNames() {
+    var page = view.querySelector('.score-page'), scroll = page && page.querySelector('.score-scroll');
+    var svg = scroll && scroll.querySelector('svg');
+    if (!svg || !svg.querySelector('.label')) return;
+    var left = scroll.querySelector('.score-inner').getBoundingClientRect().left, x = Infinity;
+    var m = svg.querySelector('g.measure');
+    Array.prototype.forEach.call(m ? m.querySelectorAll('g.staff') : [], function (st) {
+      Array.prototype.forEach.call(st.children, function (c) {
+        if (c.tagName.toLowerCase() === 'path') x = Math.min(x, c.getBoundingClientRect().left);
+      });
+    });
+    if (x === Infinity) return;
+    var w = Math.round(x - left);
+    if (w < 8 || w > scroll.clientWidth * 0.6) return;
+    var names = el('div', 'score-names');
+    names.setAttribute('aria-hidden', 'true');
+    names.style.width = w + 'px';
+    names.style.height = Math.ceil(svg.getBoundingClientRect().height) + 'px';
+    var copy = svg.cloneNode(true);
+    Array.prototype.forEach.call(copy.querySelectorAll('[id]'), function (n) { n.removeAttribute('id'); });
+    copy.removeAttribute('id');
+    names.appendChild(copy);
+    page.appendChild(names);
+    namesW = w;
+    function edge() { page.classList.toggle('is-scrolled', scroll.scrollLeft > 2); }
+    scroll.addEventListener('scroll', edge, { passive: true });
+    edge();
   }
 
   function load(src) {
@@ -162,7 +195,7 @@
     var note = idx >= 0 ? (resting ? document.getElementById(events[mi].measureOn) : cursorNote()) : null;
     cursor.classList.toggle('is-measure', !!(note && resting));
     if (!note) { cursor.style.display = 'none'; return; }
-    var sys = note.closest('.system'), page = note.closest('.score-page'), meas = resting ? note : note.closest('.measure');
+    var sys = note.closest('.system'), page = note.closest('.score-inner'), meas = resting ? note : note.closest('.measure');
     if (!sys || !page) return;
     // the cursor spans the staves of the system (not the tempo marks and titles above them)
     var staves = (meas || sys).querySelectorAll('g.staff'), top = Infinity, bottom = -Infinity;
@@ -181,6 +214,8 @@
     cursor.style.marginLeft = resting ? (-Math.max(18, hr.width - 6) / 2) + 'px' : '';
     cursor.style.top = (top - pr.top - 4) + 'px';
     cursor.style.height = (bottom - top + 8) + 'px';
+    if (follow && (playing() || showCursor)) keepInLine(page.parentNode, hr.left + hr.width / 2);
+    showCursor = false;
     if (!follow || quiet || !playing()) { curSystem = sys; return; }
     var barEl = document.getElementById('player');
     var minTop = barEl ? barEl.getBoundingClientRect().bottom + 12 : 12, maxBottom = window.innerHeight - 12;
@@ -201,6 +236,18 @@
     });
     if (a === Infinity) return;
     if (a < minTop || z > maxBottom) scrollByPx(Math.min(a - minTop, z - maxBottom + (maxBottom - minTop) / 3));
+  }
+  // sideways: the notes being played stay in the left part of the line, clear of the pinned names
+  var lastSide = 0;
+  function keepInLine(scroll, x) {
+    if (!scroll) return;
+    var r = scroll.getBoundingClientRect(), from = r.left + namesW + 24, to = r.left + scroll.clientWidth * 0.75;
+    if (x >= from && x <= to) return;
+    var now = Date.now();
+    if (now - lastSide < 300) return;
+    lastSide = now;
+    var target = scroll.scrollLeft + x - (r.left + namesW + (scroll.clientWidth - namesW) * 0.2);
+    scroll.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }
   var lastScroll = 0;
   function scrollByPx(dy) {
@@ -324,6 +371,7 @@
     pendingSec = sec;
     if (seq) seq.currentTime = sec;
     curSystem = null;
+    showCursor = true;
     seekTo(secToBeat(sec), !playing());
     ui(sec);
   }

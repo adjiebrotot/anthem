@@ -80,9 +80,19 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 
 /* the score, drawn by Verovio in the browser (score.js): white sheets, the notes being played in colour */
 .score-view { position: relative; min-height: 420px; }
-.score-page { position: relative; margin: 0 0 14px; background: var(--paper); border-radius: 6px; overflow: hidden;
+.score-view:has(.score-page) { min-height: 0; }
+/* one continuous line of music that scrolls sideways; the instrument names stay pinned at the left (score.js) */
+.score-page { position: relative; margin: 0; background: var(--paper); border-radius: 6px; overflow: hidden;
               box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 22px rgba(8,16,40,.14); }
-.score-page svg { position: relative; z-index: 1; display: block; width: 100%; height: auto; color: #111; }
+.score-scroll { overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
+                scrollbar-color: rgba(8,16,40,.28) transparent; }
+.score-scroll::-webkit-scrollbar { height: 10px; }
+.score-scroll::-webkit-scrollbar-thumb { background: rgba(8,16,40,.25); border-radius: 99px; border: 2px solid var(--paper); }
+.score-inner { position: relative; width: max-content; }
+.score-page svg { position: relative; z-index: 1; display: block; max-width: none; color: #111; }
+.score-names { position: absolute; z-index: 3; left: 0; top: 0; overflow: hidden; pointer-events: none; background: var(--paper);
+               transition: box-shadow var(--transition-fast); }
+.score-page.is-scrolled .score-names { box-shadow: 6px 0 10px -6px rgba(8,16,40,.35); }
 .score-page g.note { cursor: pointer; }
 .score-page g.playing, .score-page g.playing * { fill: #E0103A; stroke: #E0103A; color: #E0103A; }
 .score-cursor { position: absolute; z-index: 0; width: 18px; margin-left: -9px; border-radius: 9px; pointer-events: none;
@@ -158,7 +168,8 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 .ig-name, .an-country { font-weight: 800; }
 .ig-nat { font-size: .85rem; color: var(--brand); }
 .ig-sub, .an-title { font-size: .82rem; color: var(--muted); }
-.prose p { margin: 0 0 10px; max-width: 78ch; }
+.prose p { margin: 0 0 10px; }
+.prose p:last-child { margin-bottom: 0; }
 .faq-item + .faq-item { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .faq-item h3 { margin: 0 0 6px; font-size: .98rem; }
 .faq-item p { margin: 0; color: var(--muted); }
@@ -170,7 +181,6 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 .more-anthems { margin-top: 26px; }
 
 /* home */
-.home-title h1 { max-width: 22ch; }
 .search { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; max-width: 460px; }
 .search input { font: inherit; height: 44px; padding: 0 14px; border-radius: var(--radius-sm); border: 1.5px solid var(--border);
                 background: var(--input-bg); color: var(--text); }
@@ -185,9 +195,10 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 
 /* footer */
 .page-footer { margin-top: 30px; margin-bottom: 30px; }
-.page-footer-info { padding: 16px 18px; }
-.page-footer-info p { margin: 0 0 12px; color: var(--muted); line-height: 1.6; font-size: .9rem; }
-.footer-made { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .9rem; }
+.page-footer-info { padding: 14px 18px; }
+.footer-made { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.footer-flag { flex: none; width: 36px; height: 36px; object-fit: contain; }
+.footer-badge { flex: none; width: auto; height: 16px; border-radius: 3px; }
 
 @media (max-width: 600px) {
   .container { padding: 0 16px; }
