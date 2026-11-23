@@ -6,7 +6,7 @@ Canonical site: https://anthem.adjiebrotots.com/
 Sitemap: https://anthem.adjiebrotots.com/sitemap.xml
 Robots: https://anthem.adjiebrotots.com/robots.txt
 Creator: Adjie Brotosukmono (adjiebrotot), https://www.adjiebrotots.com/ (profile for LLMs: https://www.adjiebrotots.com/llms.txt). Sister sites: https://tool.adjiebrotots.com/ (tools), https://blog.adjiebrotots.com/ (blog).
-Access: free, no account. PDFs are made in the browser and carry a faint anthem.adjiebrotots.com watermark.
+Access: free, no account. Licence: CC BY-SA 4.0 where the melody is in the public domain; where it is still in copyright the melody belongs to its owner and the arrangement is CC BY 4.0. Credit: arranged for orchestra by adjiebrotot (anthem.adjiebrotots.com).
 
 ## How the site is laid out
 
