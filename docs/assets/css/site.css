@@ -138,8 +138,8 @@ html[data-abt-theme="light"] .family-theme .ico-moon, html[data-abt-theme="dark"
 .pl-tools select, .pl-tools button { font: 600 .82rem/1 inherit; font-family: inherit; height: 32px; padding: 0 9px; cursor: pointer;
            border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--panel); color: var(--text); }
 .pl-tools button:hover, .pl-tools select:hover { border-color: var(--ink-line); }
-.pl-follow[aria-pressed="true"] { border-color: var(--ink-line); background: var(--bg-subtle); }
-.pl-follow[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
+.pl-follow[aria-pressed="true"], .pl-repeat[aria-pressed="true"] { border-color: var(--ink-line); background: var(--bg-subtle); }
+.pl-follow[aria-pressed="false"], .pl-repeat[aria-pressed="false"] { color: var(--muted); text-decoration: line-through; }
 .pl-zoom { min-width: 32px; }
 .pl-error .pl-title::after { content: " (the recording could not be loaded)"; color: var(--negative); }
 .player-note { margin: -6px 0 12px; font-size: .8rem; color: var(--muted); }

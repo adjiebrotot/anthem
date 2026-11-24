@@ -322,6 +322,7 @@ def player(c: Ctx, what: str, part: bool = False) -> str:
   <div class="pl-tools">
     {mix}<select class="pl-speed" aria-label="Speed">{speeds}</select>
     <button type="button" class="pl-follow" aria-pressed="true" title="Scroll with the music">Follow</button>
+    <button type="button" class="pl-repeat" aria-pressed="true" title="Play again from the start when the music ends">Repeat</button>
     <button type="button" class="pl-zoom" data-zoom="-" aria-label="Smaller notes">−</button>
     <button type="button" class="pl-zoom" data-zoom="+" aria-label="Larger notes">+</button>
   </div>
