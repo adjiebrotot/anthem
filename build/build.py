@@ -293,6 +293,7 @@ def build_one(orch: Path, slug: str, anthems: dict, descs: dict, jobs: list) -> 
                          footer=f'Free download: anthem.adjiebrotots.com{url}')
 
     # MIDI of the whole arrangement (at the country folder, where they have always been)
+    out.mkdir(parents=True, exist_ok=True)   # a new country has no folder yet
     gm = orch / 'work' / slug / 'guide.mid'
     if gm.exists():
         shutil.copy(gm, out / f'{title_slug}-melody.mid')

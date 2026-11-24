@@ -3,7 +3,7 @@
 Used only in titles, descriptions, headings and alt text (the pages are English), so that a search such as
 "partitura de violín Himno Nacional Argentino" finds the violin page. `pattern` puts the instrument word and the
 anthem's native title (anthems.py `native[0]`) in the order people type them. An anthem names its language in
-LANG_OF (anthem-orchestra slug -> code); English anthems, Khmer, Lao, Mongolian and Maori have none yet.
+LANG_OF (anthem-orchestra slug -> code); English anthems (South Sudan too), Khmer, Lao, Mongolian and Maori have none yet.
 """
 from __future__ import annotations
 
@@ -44,9 +44,13 @@ WORDS = {
     'hi': _w('नोट्स', 'स्कोर', 'ऑर्केस्ट्रा', 'धुन', '{title} {inst} नोट्स', 'वायलिन,वियोला,चेलो,डबल बास,बांसुरी,पिकोलो,ओबो,क्लैरिनेट,बैसून,हॉर्न,ट्रम्पेट,ट्रॉम्बोन,ट्यूबा,टिम्पनी,तालवाद्य,हार्प,पियानो,कोरस'),
     'ga': _w('ceol bileoige', 'scór iomlán', 'ceolfhoireann', 'fonn', '{title} ceol bileoige {inst}', 'veidhlín,vióla,dordveidhil,olldord,feadóg mhór,piccolo,óbó,clairinéid,basún,corn,trumpa,trombón,túba,tiompáin,cnaguirlisí,cláirseach,pianó,cór'),
     'af': _w('bladmusiek', 'volledige partituur', 'orkes', 'melodie', '{title} bladmusiek {inst}', 'viool,altviool,tjello,kontrabas,fluit,piccolo,hobo,klarinet,fagot,horing,trompet,tromboon,tuba,pouke,slagwerk,harp,klavier,koor'),
+    'id': _w('not balok', 'partitur lengkap', 'orkestra', 'melodi', 'not balok {inst} {title}', 'biola,viola,selo,kontrabas,flute,pikolo,obo,klarinet,bassoon,horn,trompet,trombon,tuba,timpani,perkusi,harpa,piano,paduan suara'),
+    'ru': _w('ноты', 'партитура', 'оркестр', 'мелодия', '{title} ноты {inst}', 'скрипка,альт,виолончель,контрабас,флейта,флейта-пикколо,гобой,кларнет,фагот,валторна,труба,тромбон,туба,литавры,ударные,арфа,фортепиано,хор'),
+    'he': _w('תווים', 'פרטיטורה', 'תזמורת', 'מנגינה', 'תווים {inst} {title}', 'כינור,ויולה,צ׳לו,קונטרבס,חליל,פיקולו,אבוב,קלרינט,בסון,קרן יער,חצוצרה,טרומבון,טובה,טימפני,כלי הקשה,נבל,פסנתר,מקהלה'),
+    'my': _w('ဂီတသင်္ကေတ', 'အော်ကက်စထရာ ဂီတသင်္ကေတ', 'အော်ကက်စထရာ', 'တေးသွား', '{title} {inst} ဂီတသင်္ကေတ', 'တယော,ဗီယိုလာ,ချဲလို,ဒဗယ်ဘေ့စ်,ပလွေ,ပစ်ကလို,အိုဘိုး,ကလာရီနက်,ဘဆွန်,ဟွန်း,ထရမ်းပက်,ထရွန်ဘုန်း,တူဘာ,တင်ပနီ,ရိုက်ခတ်တူရိယာ,စောင်း,စန္ဒယား,သံပြိုင်'),
 }
 
-LANG_OF = {'argentina-anthem': 'es', 'colombia-anthem': 'es', 'mexico-anthem': 'es', 'peru-anthem': 'es', 'venezuela-anthem': 'es', 'spain-anthem': 'es', 'brazil-anthem': 'pt', 'portugal-anthem': 'pt', 'france-anthem': 'fr', 'belgium-anthem': 'fr', 'canada-anthem': 'fr', 'germany-anthem': 'de', 'switzerland-anthem': 'de', 'european-union-anthem': 'de', 'netherlands-anthem': 'nl', 'italy-anthem': 'it', 'vatican-anthem': 'it', 'denmark-anthem': 'da', 'sweden-anthem': 'sv', 'norway-anthem': 'nb', 'finland-anthem': 'fi', 'poland-anthem': 'pl', 'romania-anthem': 'ro', 'turkiye-anthem': 'tr', 'greece-anthem': 'el', 'ukraine-anthem': 'uk', 'bahrain-anthem': 'ar', 'qatar-anthem': 'ar', 'saudi-arabia-anthem': 'ar', 'uae-anthem': 'ar', 'iran-anthem': 'fa', 'china-anthem': 'zh-Hans', 'taiwan-anthem': 'zh-Hant', 'japan-anthem': 'ja', 'south-korea-anthem': 'ko', 'north-korea-anthem': 'ko', 'thailand-anthem': 'th', 'vietnam-anthem': 'vi', 'malaysia-anthem': 'ms', 'brunei-anthem': 'ms', 'singapore-anthem': 'ms', 'philippines-anthem': 'fil', 'india-anthem': 'hi', 'ireland-anthem': 'ga', 'south-africa-anthem': 'af'}
+LANG_OF = {'indonesia-anthem': 'id', 'russia-anthem': 'ru', 'israel-anthem': 'he', 'myanmar-anthem': 'my', 'iraq-anthem': 'ar', 'argentina-anthem': 'es', 'colombia-anthem': 'es', 'mexico-anthem': 'es', 'peru-anthem': 'es', 'venezuela-anthem': 'es', 'spain-anthem': 'es', 'brazil-anthem': 'pt', 'portugal-anthem': 'pt', 'france-anthem': 'fr', 'belgium-anthem': 'fr', 'canada-anthem': 'fr', 'germany-anthem': 'de', 'switzerland-anthem': 'de', 'european-union-anthem': 'de', 'netherlands-anthem': 'nl', 'italy-anthem': 'it', 'vatican-anthem': 'it', 'denmark-anthem': 'da', 'sweden-anthem': 'sv', 'norway-anthem': 'nb', 'finland-anthem': 'fi', 'poland-anthem': 'pl', 'romania-anthem': 'ro', 'turkiye-anthem': 'tr', 'greece-anthem': 'el', 'ukraine-anthem': 'uk', 'bahrain-anthem': 'ar', 'qatar-anthem': 'ar', 'saudi-arabia-anthem': 'ar', 'uae-anthem': 'ar', 'iran-anthem': 'fa', 'china-anthem': 'zh-Hans', 'taiwan-anthem': 'zh-Hant', 'japan-anthem': 'ja', 'south-korea-anthem': 'ko', 'north-korea-anthem': 'ko', 'thailand-anthem': 'th', 'vietnam-anthem': 'vi', 'malaysia-anthem': 'ms', 'brunei-anthem': 'ms', 'singapore-anthem': 'ms', 'philippines-anthem': 'fil', 'india-anthem': 'hi', 'ireland-anthem': 'ga', 'south-africa-anthem': 'af'}
 
 
 def words(slug: str) -> dict | None:

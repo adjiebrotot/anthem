@@ -33,14 +33,18 @@ RIGHTS = {
     'germany-anthem': (PD, None, 1797),
     'greece-anthem': (PD, None, 1828),
     'india-anthem': (PD, None, 1911),
+    'indonesia-anthem': (PD, None, 1928),
     'iran-anthem': (CR, None, 1990),
+    'iraq-anthem': (CR, None, 1934),
     'ireland-anthem': (PD, None, 1910),
+    'israel-anthem': (PD, None, 1888),
     'italy-anthem': (PD, None, 1847),
     'japan-anthem': (PD, None, 1880),
     'laos-anthem': (CR, None, 1941),
     'malaysia-anthem': (PD, None, None),
     'mexico-anthem': (PD, None, 1854),
     'mongolia-anthem': (CR, None, 1950),
+    'myanmar-anthem': (CR, None, 1930),
     'netherlands-anthem': (PD, None, 1568),
     'new-zealand-anthem': (PD, None, 1876),
     'north-korea-anthem': (CR, None, 1947),
@@ -51,10 +55,12 @@ RIGHTS = {
     'portugal-anthem': (PD, None, 1890),
     'qatar-anthem': (CR, None, 1996),
     'romania-anthem': (PD, None, 1848),
+    'russia-anthem': (PD, None, 1939),
     'saudi-arabia-anthem': (CR, None, 1947),
     'singapore-anthem': (CR, "Zubir Said's family", 1958),
     'south-africa-anthem': (CR, 'the Government of South Africa', 1897),
     'south-korea-anthem': (CR, 'the Government of the Republic of Korea (given by Ahn Eak-tai\'s family in 2005)', 1935),
+    'south-sudan-anthem': (CR, 'the Government of South Sudan', 2011),
     'spain-anthem': (PD, None, 1761),
     'sweden-anthem': (PD, None, 1844),
     'switzerland-anthem': (PD, None, 1841),
@@ -83,6 +89,8 @@ def licence(slug: str) -> tuple[str, str]:
 # ------------------------------------------------------------------------------------------------ credit lines
 # The names in an attribution, where anthems.py's music / words text (years, notes, phrases) does not read as one.
 COMPOSER = {
+    'israel-anthem': 'Samuel Cohen, after the folk song "Carul cu boi"',
+    'south-sudan-anthem': 'students and faculty of the University of Juba',
     'bahrain-anthem': 'an uncredited composer',
     'cambodia-anthem': 'F. Perruchot and J. Jekyll, after a Khmer folk melody',
     'european-union-anthem': 'Ludwig van Beethoven',
@@ -98,6 +106,7 @@ COMPOSER = {
     'venezuela-anthem': 'Juan José Landaeta (attributed)',
 }
 LYRICIST = {   # '' = no lyricist to name
+    'south-sudan-anthem': '',
     'australia-anthem': 'Peter Dodds McCormick',
     'belgium-anthem': 'Jenneval and Charles Rogier',
     'european-union-anthem': '',
