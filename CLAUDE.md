@@ -87,6 +87,9 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-24: The player repeats by default: on spessasynth's `songEnded`, `ended()` in score.js plays again from
+  0 while `repeat` is on; the Repeat button (`.pl-repeat`, next to Follow, styled the same) turns it off and the
+  choice is stored (`am-repeat`). Shipped without a rebuild by adding the button to every page and swapping `?v=`.
 - 2026-11-23: AdSense auto ads (side rail, anchor) carry inline `!important` styles that no print style sheet hides,
   and one landed on a PDF: score.js now writes the A4 pages into a frame of their own (`#pdfFrame`, `PDF_CSS`) and
   prints that frame, always black on white. The screen score follows the theme: `--paper`, `--score-ink`,

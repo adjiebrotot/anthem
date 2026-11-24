@@ -70,7 +70,7 @@
   var full = view && view.getAttribute('data-full') === '1';
   var zoomKey = 'am-zoom-' + (full ? 'full' : 'part');
   var zoom = parseFloat(store(zoomKey)) || 1;
-  var cursor = el('div', 'score-cursor'), curSystem = null, follow = store('am-follow') !== '0', namesW = 0, showCursor = false;
+  var cursor = el('div', 'score-cursor'), curSystem = null, follow = store('am-follow') !== '0', repeat = store('am-repeat') !== '0', namesW = 0, showCursor = false;
 
   // on screen the score is one continuous line of music that scrolls sideways (the page already has the title)
   function screenOptions(w) {
@@ -344,7 +344,13 @@
     });
     return loading;
   }
-  function ended() { setBtn(false); clearAll(); lastBeat = 0; pendingSec = 0; cursor.style.display = 'none'; ui(0); }
+  function ended() {
+    if (repeat && seq) {    // play again from the top (the Repeat button turns this off)
+      clearAll(); lastBeat = 0; pendingSec = 0; curSystem = null;
+      setTimeout(function () { if (!seq) return; seq.currentTime = 0; start(); }, 50);
+      return;
+    }
+    setBtn(false); clearAll(); lastBeat = 0; pendingSec = 0; cursor.style.display = 'none'; ui(0); }
   function setBtn(p) {
     if (!btn) return;
     btn.classList.toggle('is-playing', p);
@@ -407,6 +413,14 @@
         follow = !follow; store('am-follow', follow ? '1' : '0');
         fb.setAttribute('aria-pressed', follow ? 'true' : 'false');
         if (follow) { curSystem = null; placeCursor(false); }
+      });
+    }
+    var rb = bar.querySelector('.pl-repeat');
+    if (rb) {
+      rb.setAttribute('aria-pressed', repeat ? 'true' : 'false');
+      rb.addEventListener('click', function () {
+        repeat = !repeat; store('am-repeat', repeat ? '1' : '0');
+        rb.setAttribute('aria-pressed', repeat ? 'true' : 'false');
       });
     }
     document.addEventListener('keydown', function (e) {
