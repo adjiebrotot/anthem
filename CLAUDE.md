@@ -22,6 +22,7 @@ hand (rebuild instead). **At the end of every run, append new lessons to the log
 | `build/sitefiles.py` | home, 404, privacy redirect, sitemap (with share images), robots.txt, llms.txt, ads.txt, CNAME, .nojekyll |
 | `build/render.cjs` | Playwright Chromium: the share image (top of the full score's first A4 page) |
 | `build/check.py` | `notes`: every note of the shipped MEI vs the arrangement; `site`: links, JSON-LD, sitemap, score files, player files, no PDF or WebP |
+| `build/add.py` | one command to add or update anthems: preflight (anthem-orchestra files, RIGHTS, FLAGS + file, LANG_OF/WORDS), `check.py notes --only`, `build.py --only` (+ `synth.mjs` on a new MIDI), `check.py site` |
 | `build/manifest.json` | what is on the site (one row per anthem); partial builds merge into it |
 | `docs/assets/` | design system copied from adjiebrotot/tool (fonts, dark/light tokens, theme.js, dropdown) + `site.css`, `site.js` (theme, menus, search, ads), `img/flags/` (one SVG flag per country, from the flag-icons npm package, MIT; `FLAGS` in pages.py maps a country slug to its file), `score.js` (viewer, player, PDF), `js/vendor/` (spessasynth), `sf/` (SoundFont per preset), the logo |
 
@@ -62,6 +63,9 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 ## A new arrangement in anthem-orchestra
 
+Use the **add-anthem** skill (`.claude/skills/add-anthem/SKILL.md`): `$PY build/add.py <slug> ... --preflight` lists
+what is missing, then `$PY build/add.py <slug> ...` checks the notes, builds, measures loudness and checks the site.
+
 1. It needs `work/<slug>/song.json`, `analysis.json`, `guide.json` and an entry in `work/youtube/anthems.py`
    (country, title, native, music, words, adopted, language, about, orch, region) and a DESCRIPTIONS.md row.
 2. Add its language to `LANG_OF` in `build/i18n.py` (and a `WORDS` table if the language is new).
@@ -87,6 +91,13 @@ Node with Playwright (pre-installed in cloud sessions) runs `build/render.cjs`. 
 
 Append new entries at the top. Format: `YYYY-MM-DD: lesson (context / fix)`.
 
+- 2026-11-24: Six anthems added (Indonesia, Russia, Myanmar, South Sudan, Iraq, Israel; 59 in all, 1,024 pages):
+  `build.py --only` for a NEW country failed copying its MIDI (no `docs/<country>/` yet): build_one now makes the
+  folder. New WORDS tables: id, ru, he, my (Iraq uses ar; South Sudan is English). The FAQ's "How does X compare
+  with the other anthems here?" was removed (the user's call: it changed every page whenever an anthem was added).
+  The id-only `.mei.xml` churn also rewrites `#id` references (`plist`, `startid`): normalise those too, or no file
+  looks unchanged; all 1,062 existing files then restored. A full build re-renders every share PNG: restore them.
+  `build/add.py` + the add-anthem skill make the whole addition one command.
 - 2026-11-24: The player repeats by default: on spessasynth's `songEnded`, `ended()` in score.js plays again from
   0 while `repeat` is on; the Repeat button (`.pl-repeat`, next to Follow, styled the same) turns it off and the
   choice is stored (`am-repeat`). Shipped without a rebuild by adding the button to every page and swapping `?v=`.

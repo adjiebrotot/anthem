@@ -69,6 +69,7 @@ FLAGS = {
     'singapore': 'sg', 'south-africa': 'za', 'south-korea': 'kr', 'spain': 'es', 'sweden': 'se',
     'switzerland': 'ch', 'taiwan': 'tw', 'thailand': 'th', 'turkiye': 'tr', 'uae': 'ae', 'ukraine': 'ua',
     'united-kingdom': 'gb', 'united-states': 'us', 'vatican-city': 'va', 'venezuela': 've', 'vietnam': 'vn',
+    'indonesia': 'id', 'iraq': 'iq', 'israel': 'il', 'myanmar': 'mm', 'russia': 'ru', 'south-sudan': 'ss',
 }
 
 
@@ -539,56 +540,6 @@ def licence_answer(c: Ctx) -> str:
     return f'<p>{txt}</p>{sample_credits(c)}'
 
 
-def _rank(values: list, mine, reverse: bool) -> int:
-    return sorted(values, reverse=reverse).index(mine) + 1
-
-
-def _ordinal(n: int) -> str:
-    if n == 1:
-        return ''
-    suf = 'th' if 10 <= n % 100 <= 20 else {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
-    return f'{n}{suf} '
-
-
-def _secs(t: str) -> int:
-    m, _, sec = t.partition(':')
-    return int(m) * 60 + int(sec) if sec else 0
-
-
-def compare_answer(c: Ctx) -> str:
-    """How this anthem stands among the others on the site: the age of its tune, the length and size of the score."""
-    from rights import RIGHTS
-    n = len(c.man)
-    bits = []
-    years = [y for k, (_, _, y) in RIGHTS.items() if y and k in c.man]
-    if c.year and c.year in years:
-        old = _rank(years, c.year, False)
-        if old <= len(years) // 2:
-            bits.append(f'Its tune dates from {c.year}, the {_ordinal(old)}oldest of the {n} anthems on this site')
-        else:
-            bits.append(f'Its tune dates from {c.year}, the {_ordinal(_rank(years, c.year, True))}newest of the {n} anthems on this site')
-    lens = [_secs(v.get('length', '')) for v in c.man.values() if v.get('length')]
-    mine = _secs(c.length) if c.length else 0
-    if mine and mine in lens:
-        lo, hi = _rank(lens, mine, False), _rank(lens, mine, True)
-        bits.append(f'At {e(c.length)} this arrangement is the {_ordinal(hi)}longest' if hi <= lo
-                    else f'At {e(c.length)} this arrangement is the {_ordinal(lo)}shortest')
-    parts = [v['parts'] for v in c.man.values() if v.get('parts')]
-    np_ = len(c.arr.parts)
-    if np_ in parts:
-        big = _rank(parts, np_, True)
-        if big <= n // 3:
-            bits.append(f'and with {np_} parts it is among the largest scores here')
-        elif big > n - n // 3:
-            bits.append(f'and with {np_} parts it is among the smallest scores here')
-        else:
-            bits.append(f'and it has {np_} parts')
-    out = ''
-    for b in bits:
-        out += (', ' if b.startswith('and ') else ('. ' if out else '')) + b
-    return out + '.' if out else ''
-
-
 def inspiration(c: Ctx) -> str:
     orch = c.m.get('orch', '')
     first = orch.split('. ')[0].rstrip('.')
@@ -603,9 +554,6 @@ def common_faq(c: Ctx, what: str) -> list[tuple[str, str]]:
            + f'. It was adopted {e(m["adopted"])}.')]
     if inspiration(c):
         qa.append(('What inspired the orchestration?', inspiration(c)))
-    cmp = compare_answer(c)
-    if cmp:
-        qa.append((f'How does {c.title} compare with the other anthems here?', cmp))
     qa.append(('What key and tempo is it in?',
                f'This arrangement is in {e(c.key_meter)}' + (f' and starts at about {c.bpm} beats per minute' if c.bpm else '')
                + (f'; it lasts {e(c.length)}.' if c.length else '.')))
